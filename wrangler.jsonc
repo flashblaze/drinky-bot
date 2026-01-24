@@ -20,5 +20,19 @@
       "custom_domain": true,
       "pattern": "drinky-api.flashblaze.dev"
     }
-  ]
+  ],
+  "migrations": [
+    {
+      "new_sqlite_classes": ["Drinky"],
+      "tag": "v1"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DRINKY",
+        "class_name": "Drinky",
+      }
+    ]
+  }
 }

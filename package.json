@@ -8,14 +8,19 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "1.0.0-beta.12-a5629fb",
     "grammy": "^1.39.3",
-    "hono": "^4.11.5"
+    "hono": "^4.11.5",
+    "nanoid": "^5.1.6"
   },
   "devDependencies": {
     "@types/node": "^25.0.10",
+    "drizzle-kit": "1.0.0-beta.12-a5629fb",
     "oxfmt": "^0.26.0",
     "oxlint": "^1.41.0",
     "oxlint-tsgolint": "^0.11.1",
