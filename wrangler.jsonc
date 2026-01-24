@@ -13,4 +13,10 @@
   "placement": {
     "mode": "smart",
   },
+  "routes": [
+    {
+      "custom_domain": true,
+      "pattern": "drinky-api.flashblaze.dev"
+    }
+  ]
 }
