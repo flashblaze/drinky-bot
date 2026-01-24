@@ -1,0 +1,24 @@
+{
+  "name": "drinky-bot",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "grammy": "^1.39.3",
+    "hono": "^4.11.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "oxfmt": "^0.26.0",
+    "oxlint": "^1.41.0",
+    "oxlint-tsgolint": "^0.11.1",
+    "wrangler": "^4.4.0"
+  }
+}
