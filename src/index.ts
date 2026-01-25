@@ -26,22 +26,22 @@ export class Drinky extends DurableObject {
   }
 
   async insert(user: typeof userTable.$inferInsert) {
-    await this.db.insert(userTable).values(user);
+    return this.db.insert(userTable).values(user).returning().get();
   }
-  async select() {
-    return this.db.select().from(userTable);
+  async selectCurrentUser() {
+    return this.db.select().from(userTable).get();
   }
   async _migrate() {
     migrate(this.db, migrations);
+  }
+
+  async deleteAll() {
+    await this.db.delete(userTable);
   }
 }
 
 const createBot = (token: string) => {
   const bot = new Bot(token);
-
-  bot.command("start", async (ctx) => {
-    await ctx.reply("Bot under construction");
-  });
 
   return bot;
 };
@@ -52,21 +52,30 @@ app.post("/webhook", async (c) => {
     const bot = createBot(c.env.BOT_TOKEN);
     await bot.init();
 
-    // This is required for grammy to work in Cloudflare Workers
-    await bot.handleUpdate(update);
-
-    const stub = c.env.DRINKY.getByName(update.message.from.id.toString());
-
-    await stub.insert({
-      telegramId: update.message.from.id,
-      username: update.message.from.username,
-      languageCode: update.message.from.language_code,
-      firstName: update.message.from.first_name,
-      lastName: update.message.from.last_name,
+    bot.command("start", async (ctx) => {
+      const stub = c.env.DRINKY.getByName(update.message.from.id.toString());
+      const existingUser = await stub.selectCurrentUser();
+      if (existingUser) {
+        await ctx.reply("You are already registered");
+      } else {
+        await ctx.reply("You aren't registered yet. Registering you now...");
+        const newUser = await stub.insert({
+          telegramId: update.message.from.id,
+          username: update.message.from.username,
+          languageCode: update.message.from.language_code,
+          firstName: update.message.from.first_name,
+          lastName: update.message.from.last_name,
+        });
+        const name =
+          newUser.firstName && newUser.lastName
+            ? `${newUser.firstName} ${newUser.lastName}`
+            : newUser.username;
+        await ctx.reply(`Welcome ${name}`);
+      }
     });
 
-    const allUsers = await stub.select();
-    console.log(allUsers);
+    // This is required for grammy to work in Cloudflare Workers. Also, this has to go after the commands are registered.
+    await bot.handleUpdate(update);
 
     return c.json({ ok: true });
   } catch (error) {
