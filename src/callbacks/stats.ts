@@ -20,9 +20,17 @@ export const statsCallback: Callback = {
     if (!stats) {
       await ctx.reply("No stats found");
     } else {
-      await ctx.reply(`💧 You've drank *${stats.totalAmount || 0} ml* today\\.`, {
-        parse_mode: "MarkdownV2",
-      });
+      const currentUser = await stub.selectCurrentUser();
+      if (!currentUser) {
+        await ctx.reply("User not found");
+        return;
+      }
+      await ctx.reply(
+        `You've drank *${stats.totalAmount || 0} ml* today\\.\nYour goal is to drink *${currentUser.goal} ml* every day\\.`,
+        {
+          parse_mode: "MarkdownV2",
+        },
+      );
     }
   },
 };

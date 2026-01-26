@@ -3,6 +3,8 @@ import { startCommand } from "../commands/start";
 import { logWaterCallbacks } from "../callbacks/logWater";
 import { statsCallback } from "../callbacks/stats";
 import { goalCommand } from "../commands/goal";
+import { logCommand } from "../commands/log";
+import { statsCommand } from "../commands/stats";
 
 /**
  * Registry of all commands and callbacks.
@@ -14,6 +16,8 @@ import { goalCommand } from "../commands/goal";
 export const commands: Command[] = [
   startCommand,
   goalCommand,
+  logCommand,
+  statsCommand,
   // Add more commands here
 ];
 

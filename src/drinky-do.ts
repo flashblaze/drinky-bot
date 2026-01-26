@@ -45,7 +45,6 @@ export class Drinky extends DurableObject {
 
   async getStats(timestamp: number) {
     const currentUser = await this.selectCurrentUser();
-    console.log(currentUser, "currentUser");
     if (!currentUser) {
       throw new Error("User not found");
     }
