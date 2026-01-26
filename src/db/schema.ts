@@ -35,4 +35,13 @@ export const userTable = sqliteTable(
   ],
 );
 
+export const waterLogTable = sqliteTable("water_log", {
+  id: text().primaryKey().$defaultFn(nanoid),
+  userId: text().references(() => userTable.id),
+  amount: integer().notNull(),
+  ...timeStamps,
+});
+
 export type User = InferSelectModel<typeof userTable>;
+
+export type WaterLog = InferSelectModel<typeof waterLogTable>;
