@@ -3,6 +3,7 @@ import type { Command } from "../bot/types";
 
 export const startCommand: Command = {
   name: "start",
+  description: "Register user and show welcome screen",
   handler: async (ctx) => {
     if (!ctx?.message) {
       return;
@@ -14,7 +15,9 @@ export const startCommand: Command = {
     const keyboard = new InlineKeyboard()
       .text("💧 Log Water", "log_water")
       .row()
-      .text("📊 Stats", "stats");
+      .text("🎯 Goal", "goal")
+      .row()
+      .text("📊 Today's stats", "stats");
 
     if (existingUser) {
       const name =

@@ -26,6 +26,7 @@ export const userTable = sqliteTable(
     lastName: text(),
     username: text().notNull(),
     languageCode: text().notNull(),
+    goal: integer().notNull().default(0),
     ...timeStamps,
   },
   (table) => [

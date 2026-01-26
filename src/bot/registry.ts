@@ -2,6 +2,7 @@ import type { Command, Callback } from "./types";
 import { startCommand } from "../commands/start";
 import { logWaterCallbacks } from "../callbacks/logWater";
 import { statsCallback } from "../callbacks/stats";
+import { goalCommand } from "../commands/goal";
 
 /**
  * Registry of all commands and callbacks.
@@ -12,6 +13,7 @@ import { statsCallback } from "../callbacks/stats";
  */
 export const commands: Command[] = [
   startCommand,
+  goalCommand,
   // Add more commands here
 ];
 

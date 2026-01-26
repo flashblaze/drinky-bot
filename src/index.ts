@@ -19,6 +19,13 @@ app.post("/webhook", async (c) => {
       callbacks,
     });
 
+    await bot.api.setMyCommands(
+      commands.map((command) => ({
+        command: command.name,
+        description: command.description,
+      })),
+    );
+
     // This is required for grammy to work in Cloudflare Workers. Also, this has to go after the commands are registered.
     await bot.handleUpdate(update);
 

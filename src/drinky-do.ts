@@ -4,7 +4,7 @@ import migrations from "../drizzle/migrations";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 import { userTable, waterLogTable } from "./db/schema";
 import { relations } from "./db/relations";
-import { desc, eq, sum } from "drizzle-orm";
+import { and, desc, eq, gte, lt, sum } from "drizzle-orm";
 
 export class Drinky extends DurableObject {
   storage: DurableObjectStorage;
@@ -43,18 +43,35 @@ export class Drinky extends DurableObject {
       .get();
   }
 
-  async getStats() {
+  async getStats(timestamp: number) {
     const currentUser = await this.selectCurrentUser();
     console.log(currentUser, "currentUser");
     if (!currentUser) {
       throw new Error("User not found");
     }
+
+    const date = new Date(timestamp);
+    const startOfDay = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    );
+    const startOfNextDay = new Date(startOfDay);
+    startOfNextDay.setUTCDate(startOfNextDay.getUTCDate() + 1);
+
+    const dayStart = startOfDay.toISOString();
+    const nextDayStart = startOfNextDay.toISOString();
+
     const stats = this.db
       .select({
         totalAmount: sum(waterLogTable.amount),
       })
       .from(waterLogTable)
-      .where(eq(waterLogTable.userId, currentUser.id))
+      .where(
+        and(
+          eq(waterLogTable.userId, currentUser.id),
+          gte(waterLogTable.createdAt, dayStart),
+          lt(waterLogTable.createdAt, nextDayStart),
+        ),
+      )
       .orderBy(desc(waterLogTable.createdAt))
       .get();
     return stats;
@@ -62,6 +79,20 @@ export class Drinky extends DurableObject {
 
   async selectCurrentUser() {
     return this.db.select().from(userTable).get();
+  }
+
+  async updateGoal(goal: number) {
+    const currentUser = await this.selectCurrentUser();
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    return this.db
+      .update(userTable)
+      .set({ goal })
+      .where(eq(userTable.id, currentUser.id))
+      .returning()
+      .get();
   }
 
   async _migrate() {

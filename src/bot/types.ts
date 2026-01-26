@@ -10,6 +10,7 @@ export type CallbackHandler = (ctx: BotContext) => Promise<void>;
 
 export interface Command {
   name: string;
+  description: string;
   handler: CommandHandler;
 }
 
