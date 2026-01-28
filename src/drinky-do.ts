@@ -127,6 +127,11 @@ export class Drinky extends DurableObject {
     reminderStartTime?: string;
     reminderTimezone?: string;
   }) {
+    console.log("[updateReminderSettings] Updating settings", {
+      userId: (await this.selectCurrentUser())?.id,
+      settings,
+    });
+
     const currentUser = await this.selectCurrentUser();
     if (!currentUser) {
       throw new Error("User not found");
@@ -159,18 +164,34 @@ export class Drinky extends DurableObject {
       .returning()
       .get();
 
+    console.log("[updateReminderSettings] User updated", {
+      userId: updatedUser.id,
+      reminderEnabled: updatedUser.reminderEnabled,
+      reminderIntervalMinutes: updatedUser.reminderIntervalMinutes,
+      reminderStartTime: updatedUser.reminderStartTime,
+    });
+
     // If enabling reminders, schedule the first one
-    if (settings.reminderEnabled) {
+    if (settings.reminderEnabled === true) {
+      console.log("[updateReminderSettings] Enabling reminders, scheduling first alarm");
       await this.scheduleNextReminder();
-    } else if (!settings.reminderEnabled) {
+    } else if (settings.reminderEnabled === false) {
+      console.log("[updateReminderSettings] Disabling reminders, canceling alarm");
       await this.cancelReminder();
     } else if (
       settings.reminderIntervalMinutes !== undefined ||
-      settings.reminderStartTime !== undefined
+      settings.reminderStartTime !== undefined ||
+      settings.reminderTimezone !== undefined
     ) {
-      // If interval or start time changed, reschedule
+      // If interval, start time, or timezone changed, reschedule if reminders are enabled
+      console.log("[updateReminderSettings] Settings changed, checking if reschedule needed", {
+        reminderEnabled: updatedUser.reminderEnabled,
+      });
       if (updatedUser.reminderEnabled) {
+        console.log("[updateReminderSettings] Reminders enabled, rescheduling");
         await this.scheduleNextReminder();
+      } else {
+        console.log("[updateReminderSettings] Reminders disabled, not rescheduling");
       }
     }
 
@@ -194,8 +215,19 @@ export class Drinky extends DurableObject {
   async scheduleNextReminder() {
     const currentUser = await this.selectCurrentUser();
     if (!currentUser || !currentUser.reminderEnabled) {
+      console.log("[scheduleNextReminder] User not found or reminders disabled", {
+        userId: currentUser?.id,
+        reminderEnabled: currentUser?.reminderEnabled,
+      });
       return;
     }
+
+    console.log("[scheduleNextReminder] Calculating next reminder", {
+      userId: currentUser.id,
+      startTime: currentUser.reminderStartTime,
+      intervalMinutes: currentUser.reminderIntervalMinutes,
+      timezone: currentUser.reminderTimezone,
+    });
 
     const nextReminderTime = this.calculateNextReminderTime(
       currentUser.reminderStartTime,
@@ -203,8 +235,89 @@ export class Drinky extends DurableObject {
       currentUser.reminderTimezone,
     );
 
-    if (nextReminderTime) {
-      await this.storage.setAlarm(nextReminderTime);
+    if (!nextReminderTime) {
+      console.error(
+        "[scheduleNextReminder] Failed to calculate next reminder time - returning null",
+        {
+          userId: currentUser.id,
+          startTime: currentUser.reminderStartTime,
+          intervalMinutes: currentUser.reminderIntervalMinutes,
+        },
+      );
+      return;
+    }
+
+    // Safety check: ensure we're not scheduling in the past
+    const now = Date.now();
+    let alarmTimeToSet = nextReminderTime;
+
+    if (nextReminderTime <= now) {
+      console.error("[scheduleNextReminder] Calculated alarm time is in the past, recalculating", {
+        userId: currentUser.id,
+        nextReminderTime,
+        nextReminderTimeISO: new Date(nextReminderTime).toISOString(),
+        now,
+        nowISO: new Date(now).toISOString(),
+        diffMs: nextReminderTime - now,
+      });
+      // Try to calculate again - this shouldn't happen if logic is correct, but handle edge case
+      const recalculated = this.calculateNextReminderTime(
+        currentUser.reminderStartTime,
+        currentUser.reminderIntervalMinutes,
+        currentUser.reminderTimezone,
+      );
+      if (!recalculated || recalculated <= now) {
+        console.error("[scheduleNextReminder] Recalculation also failed or is in past, aborting", {
+          userId: currentUser.id,
+          recalculated,
+        });
+        return;
+      }
+      // Use recalculated time
+      alarmTimeToSet = recalculated;
+      console.warn("[scheduleNextReminder] Using recalculated time", {
+        userId: currentUser.id,
+        recalculated,
+        recalculatedISO: new Date(recalculated).toISOString(),
+      });
+    }
+
+    try {
+      console.log("[scheduleNextReminder] Setting alarm", {
+        userId: currentUser.id,
+        alarmTimeToSet,
+        alarmTimeToSetISO: new Date(alarmTimeToSet).toISOString(),
+        now,
+        nowISO: new Date(now).toISOString(),
+        diffMs: alarmTimeToSet - now,
+        diffMinutes: Math.round((alarmTimeToSet - now) / (60 * 1000)),
+      });
+      await this.storage.setAlarm(alarmTimeToSet);
+
+      // Verify alarm was set
+      const verifyAlarm = await this.storage.getAlarm();
+      if (verifyAlarm !== alarmTimeToSet) {
+        console.error("[scheduleNextReminder] Alarm verification failed", {
+          userId: currentUser.id,
+          expected: alarmTimeToSet,
+          expectedISO: new Date(alarmTimeToSet).toISOString(),
+          actual: verifyAlarm,
+          actualISO: verifyAlarm ? new Date(verifyAlarm).toISOString() : null,
+        });
+      } else {
+        console.log("[scheduleNextReminder] Alarm successfully set and verified", {
+          userId: currentUser.id,
+          alarmTime: verifyAlarm,
+          alarmTimeISO: new Date(verifyAlarm).toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error("[scheduleNextReminder] Error setting alarm", {
+        userId: currentUser.id,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error; // Re-throw to ensure we know about failures
     }
   }
 
@@ -217,33 +330,78 @@ export class Drinky extends DurableObject {
 
   // Alarm handler - called when reminder time is reached
   async alarm() {
+    console.log("[alarm] Alarm triggered");
+
     const currentUser = await this.selectCurrentUser();
     if (!currentUser) {
+      console.error("[alarm] No current user found");
       return;
     }
 
+    console.log("[alarm] Processing alarm for user", {
+      userId: currentUser.id,
+      reminderEnabled: currentUser.reminderEnabled,
+    });
+
     if (!currentUser.reminderEnabled) {
+      console.log("[alarm] Reminders disabled, skipping");
       return;
     }
 
     // Check if goal is met
     const goalMet = await this.checkGoalMet();
+    console.log("[alarm] Goal check", { goalMet });
     if (goalMet) {
       await this.sendGoalCongrats();
       // Don't reschedule - goal is met for today
+      console.log("[alarm] Goal met, not rescheduling");
       return;
     }
 
     // Check if user logged water recently (within last 5 minutes)
     const recentLog = await this.getRecentWaterLog(5 * 60 * 1000); // 5 minutes in ms
+    console.log("[alarm] Recent log check", { recentLog });
     if (recentLog) {
       // Skip this reminder, reschedule next one
-      await this.scheduleNextReminder();
+      console.log("[alarm] Recent log found, skipping reminder and rescheduling");
+      try {
+        await this.scheduleNextReminder();
+        console.log("[alarm] Next reminder scheduled after recent log check");
+      } catch (error) {
+        console.error("[alarm] CRITICAL: Failed to schedule next reminder after recent log check", {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw error;
+      }
       return;
     }
 
-    await this.sendReminderMessage();
-    await this.scheduleNextReminder();
+    console.log("[alarm] Sending reminder message and rescheduling");
+    try {
+      await this.sendReminderMessage();
+      console.log("[alarm] Reminder message sent successfully");
+    } catch (error) {
+      console.error("[alarm] Error sending reminder message, but continuing to reschedule", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // Continue to reschedule even if message sending fails
+    }
+
+    try {
+      await this.scheduleNextReminder();
+      console.log("[alarm] Next reminder scheduled successfully");
+    } catch (error) {
+      console.error("[alarm] CRITICAL: Failed to schedule next reminder", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // Re-throw to ensure we know about this critical failure
+      throw error;
+    }
+
+    console.log("[alarm] Alarm processing complete");
   }
 
   // Helper Methods
@@ -254,6 +412,12 @@ export class Drinky extends DurableObject {
     _timezone: string,
   ): number | null {
     try {
+      console.log("[calculateNextReminderTime] Starting calculation", {
+        startTime,
+        intervalMinutes,
+        timezone: _timezone,
+      });
+
       const [hours, minutes] = startTime.split(":").map(Number);
       if (
         isNaN(hours) ||
@@ -263,40 +427,77 @@ export class Drinky extends DurableObject {
         minutes < 0 ||
         minutes > 59
       ) {
+        console.error("[calculateNextReminderTime] Invalid time format", {
+          startTime,
+          hours,
+          minutes,
+        });
         return null;
       }
 
       const now = new Date();
+      console.log("[calculateNextReminderTime] Current time", {
+        now: now.toISOString(),
+        nowUTC: now.getTime(),
+      });
 
       const todayStart = new Date(now);
       todayStart.setUTCHours(hours, minutes, 0, 0);
+      console.log("[calculateNextReminderTime] Today start time", {
+        todayStart: todayStart.toISOString(),
+        todayStartUTC: todayStart.getTime(),
+      });
 
       // If start time hasn't occurred today yet, schedule for start time today
       if (todayStart > now) {
+        console.log(
+          "[calculateNextReminderTime] Start time hasn't occurred today, scheduling for today start",
+        );
         return todayStart.getTime();
       }
 
       // Calculate how many minutes have passed since start time today
       const minutesSinceStart = Math.floor((now.getTime() - todayStart.getTime()) / (60 * 1000));
+      console.log("[calculateNextReminderTime] Minutes since start", {
+        minutesSinceStart,
+      });
 
       // Calculate which interval we're in (0-indexed)
       const currentInterval = Math.floor(minutesSinceStart / intervalMinutes);
+      console.log("[calculateNextReminderTime] Current interval", {
+        currentInterval,
+      });
 
       // Calculate next interval time
       const nextIntervalMinutes = (currentInterval + 1) * intervalMinutes;
       const nextReminder = new Date(todayStart);
       nextReminder.setUTCMinutes(nextReminder.getUTCMinutes() + nextIntervalMinutes);
+      console.log("[calculateNextReminderTime] Next reminder calculated", {
+        nextReminder: nextReminder.toISOString(),
+        nextReminderUTC: nextReminder.getTime(),
+        nextIntervalMinutes,
+      });
 
       // If next reminder would be tomorrow (past midnight), schedule for start time tomorrow
       if (nextReminder.getUTCDate() !== todayStart.getUTCDate()) {
         const tomorrowStart = new Date(todayStart);
         tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
+        console.log(
+          "[calculateNextReminderTime] Next reminder is tomorrow, scheduling for tomorrow start",
+          {
+            tomorrowStart: tomorrowStart.toISOString(),
+          },
+        );
         return tomorrowStart.getTime();
       }
 
+      console.log("[calculateNextReminderTime] Successfully calculated next reminder time", {
+        result: nextReminder.getTime(),
+        resultISO: nextReminder.toISOString(),
+      });
       return nextReminder.getTime();
     } catch (error) {
-      console.error("Error calculating next reminder time:", error);
+      console.error("[calculateNextReminderTime] Error calculating next reminder time:", error);
       return null;
     }
   }
