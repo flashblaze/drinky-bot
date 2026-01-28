@@ -19,6 +19,6 @@ export const exampleCallback: Callback = {
     // Access DurableObject via ctx.env.DRINKY.getByName(userId)
     // Access callback data via ctx.callbackQuery
 
-    await ctx.reply("This is an example callback!");
+    await ctx.reply("This is an example callback.");
   },
 };

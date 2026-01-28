@@ -11,6 +11,7 @@ import type { Command } from "../bot/types";
 
 export const exampleCommand: Command = {
   name: "example",
+  description: "Example command",
   handler: async (ctx) => {
     // Access environment variables via ctx.env
     // Access DurableObject via ctx.env.DRINKY.getByName(userId)

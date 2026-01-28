@@ -17,7 +17,9 @@ export const startCommand: Command = {
       .row()
       .text("🎯 Goal", "goal")
       .row()
-      .text("📊 Today's stats", "stats");
+      .text("📊 Today's stats", "stats")
+      .row()
+      .text("🔔 Reminders", "reminder_status");
 
     if (existingUser) {
       const name =
@@ -25,7 +27,7 @@ export const startCommand: Command = {
           ? `${existingUser.firstName} ${existingUser.lastName}`
           : existingUser.username;
 
-      await ctx.reply(`👋 Welcome to Drinky ${name}`, {
+      await ctx.reply(`👋 Welcome to Drinky, ${name}`, {
         reply_markup: keyboard,
       });
     } else {
@@ -46,7 +48,7 @@ export const startCommand: Command = {
           ? `${newUser.firstName} ${newUser.lastName}`
           : newUser.username;
 
-      await ctx.reply(`👋 Welcome to Drinky ${name}`, {
+      await ctx.reply(`👋 Welcome to Drinky, ${name}`, {
         reply_markup: keyboard,
       });
     }

@@ -27,6 +27,10 @@ export const userTable = sqliteTable(
     username: text().notNull(),
     languageCode: text().notNull(),
     goal: integer().notNull().default(0),
+    reminderEnabled: integer({ mode: "boolean" }).notNull().default(false),
+    reminderIntervalMinutes: integer().notNull().default(60),
+    reminderStartTime: text().notNull().default("09:00"),
+    reminderTimezone: text().notNull().default("UTC"),
     ...timeStamps,
   },
   (table) => [
