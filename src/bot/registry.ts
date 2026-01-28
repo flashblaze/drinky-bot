@@ -7,6 +7,7 @@ import { logCommand } from "../commands/log";
 import { statsCommand } from "../commands/stats";
 import { reminderCommand } from "../commands/reminder";
 import { reminderCallbacks } from "../callbacks/reminder";
+import { currentAlarmCallback } from "../callbacks/current-alarm";
 
 /**
  * Registry of all commands and callbacks.
@@ -28,5 +29,6 @@ export const callbacks: Callback[] = [
   ...logWaterCallbacks,
   statsCallback,
   ...reminderCallbacks,
+  currentAlarmCallback,
   // Add more callbacks here
 ];

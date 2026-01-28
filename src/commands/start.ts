@@ -19,7 +19,9 @@ export const startCommand: Command = {
       .row()
       .text("📊 Today's stats", "stats")
       .row()
-      .text("🔔 Reminders", "reminder_status");
+      .text("🔔 Reminders", "reminder_status")
+      .row()
+      .text("Get current alarm", "get_current_alarm");
 
     if (existingUser) {
       const name =

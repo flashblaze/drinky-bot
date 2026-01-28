@@ -36,6 +36,22 @@ export class Drinky extends DurableObject {
     return this.db.insert(userTable).values(user).returning().get();
   }
 
+  async getCurrentAlarm() {
+    const alarm = await this.storage.getAlarm();
+    if (!alarm) {
+      return null;
+    }
+
+    return new Date(alarm).toLocaleString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Kolkata",
+    });
+  }
+
   async insertWaterLog(quantity: number) {
     const currentUser = await this.selectCurrentUser();
     if (!currentUser) {
