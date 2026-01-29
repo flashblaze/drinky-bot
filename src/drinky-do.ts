@@ -407,12 +407,27 @@ export class Drinky extends DurableObject {
         nowUTC: now.getTime(),
       });
 
+      // Quiet hours: 00:00 UTC to 05:00 UTC
+      const QUIET_HOUR_START = 0; // 12 AM UTC
+      const QUIET_HOUR_END = 5; // 5 AM UTC
+
       const todayStart = new Date(now);
       todayStart.setUTCHours(1, 30, 0, 0);
       console.log("[calculateNextReminderTime] Today start time", {
         todayStart: todayStart.toISOString(),
         todayStartUTC: todayStart.getTime(),
       });
+
+      // If start time is in quiet hours, adjust to end of quiet hours (05:00 UTC)
+      if (
+        todayStart.getUTCHours() >= QUIET_HOUR_START &&
+        todayStart.getUTCHours() < QUIET_HOUR_END
+      ) {
+        todayStart.setUTCHours(QUIET_HOUR_END, 0, 0);
+        console.log("[calculateNextReminderTime] Start time was in quiet hours, adjusted to", {
+          todayStart: todayStart.toISOString(),
+        });
+      }
 
       // If start time hasn't occurred today yet, schedule for start time today
       if (todayStart > now) {
@@ -444,10 +459,45 @@ export class Drinky extends DurableObject {
         nextIntervalMinutes,
       });
 
+      // Check if next reminder falls in quiet hours (00:00-05:00 UTC)
+      const reminderHour = nextReminder.getUTCHours();
+      if (reminderHour >= QUIET_HOUR_START && reminderHour < QUIET_HOUR_END) {
+        console.log(
+          "[calculateNextReminderTime] Next reminder is in quiet hours, skipping to 05:00 UTC",
+          {
+            reminderHour,
+            quietHours: `${QUIET_HOUR_START}:00 - ${QUIET_HOUR_END}:00 UTC`,
+          },
+        );
+        // If it's still today, set to 05:00 UTC today
+        if (nextReminder.getUTCDate() === todayStart.getUTCDate()) {
+          nextReminder.setUTCHours(QUIET_HOUR_END, 0, 0);
+          console.log("[calculateNextReminderTime] Adjusted to 05:00 UTC today", {
+            nextReminder: nextReminder.toISOString(),
+          });
+        } else {
+          // If it's tomorrow, set to 05:00 UTC tomorrow
+          const tomorrowQuietEnd = new Date(todayStart);
+          tomorrowQuietEnd.setUTCDate(tomorrowQuietEnd.getUTCDate() + 1);
+          tomorrowQuietEnd.setUTCHours(QUIET_HOUR_END, 0, 0);
+          console.log("[calculateNextReminderTime] Adjusted to 05:00 UTC tomorrow", {
+            tomorrowQuietEnd: tomorrowQuietEnd.toISOString(),
+          });
+          return tomorrowQuietEnd.getTime();
+        }
+      }
+
       // If next reminder would be tomorrow (past midnight), schedule for start time tomorrow
       if (nextReminder.getUTCDate() !== todayStart.getUTCDate()) {
         const tomorrowStart = new Date(todayStart);
         tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
+        // Ensure tomorrow's start time is not in quiet hours
+        if (
+          tomorrowStart.getUTCHours() >= QUIET_HOUR_START &&
+          tomorrowStart.getUTCHours() < QUIET_HOUR_END
+        ) {
+          tomorrowStart.setUTCHours(QUIET_HOUR_END, 0, 0);
+        }
         console.log(
           "[calculateNextReminderTime] Next reminder is tomorrow, scheduling for tomorrow start",
           {
