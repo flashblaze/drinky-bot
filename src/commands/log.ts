@@ -9,10 +9,9 @@ export const logCommand: Command = {
     }
 
     if (!ctx.match) {
-      await ctx.reply(
-        "Please enter the amount of water you drank in ml\\. Example: /log 250",
-        { parse_mode: "MarkdownV2" },
-      );
+      await ctx.reply("Please enter the amount of water you drank in ml\\. Example: /log 250", {
+        parse_mode: "MarkdownV2",
+      });
       return;
     }
 
@@ -24,9 +23,7 @@ export const logCommand: Command = {
     }
 
     if (amount <= 0 || amount > 10000) {
-      await ctx.reply(
-        "Please enter a valid amount in ml. Amount must be between 1 and 10000 ml.",
-      );
+      await ctx.reply("Please enter a valid amount in ml. Amount must be between 1 and 10000 ml.");
       return;
     }
 

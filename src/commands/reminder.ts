@@ -21,14 +21,12 @@ export const reminderCommand: Command = {
 
     const statusText = settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled";
     const intervalText = `${settings.reminderIntervalMinutes} minutes`;
-    const timeText = settings.reminderStartTime;
     const timezoneText = settings.reminderTimezone;
 
     const message = `🔔 *Reminder Settings*
 
 Status: ${statusText}
 Interval: ${intervalText}
-Start Time: ${timeText}
 Timezone: ${timezoneText}
 
 Use the buttons below to configure your reminders\\.`;
@@ -37,8 +35,6 @@ Use the buttons below to configure your reminders\\.`;
       .text(settings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
       .row()
       .text("⏱️ Interval", "reminder_interval_menu")
-      .row()
-      .text("🕐 Start Time", "reminder_time_menu")
       .row()
       .text("🌍 Timezone", "reminder_timezone_menu")
       .row()

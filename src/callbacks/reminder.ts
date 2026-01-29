@@ -17,20 +17,6 @@ const COMMON_TIMEZONES = [
   { label: "JST (UTC+9)", value: "Asia/Tokyo", callback: "reminder_timezone_JST" },
 ] as const;
 
-// Helper to generate time options (0-23 hours)
-const generateTimeOptions = (): Array<{ label: string; value: string; callback: string }> => {
-  const times: Array<{ label: string; value: string; callback: string }> = [];
-  for (let hour = 0; hour < 24; hour++) {
-    const timeStr = `${hour.toString().padStart(2, "0")}:00`;
-    times.push({
-      label: timeStr,
-      value: timeStr,
-      callback: `reminder_time_${hour.toString().padStart(2, "0")}`,
-    });
-  }
-  return times;
-};
-
 export const reminderCallbacks: Callback[] = [
   {
     pattern: "reminder_toggle",
@@ -60,7 +46,6 @@ export const reminderCallbacks: Callback[] = [
 
 Status: ${newSettings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
 Interval: ${newSettings.reminderIntervalMinutes} minutes
-Start Time: ${newSettings.reminderStartTime}
 Timezone: ${newSettings.reminderTimezone}
 
 Use /reminder to configure\\.`;
@@ -69,8 +54,6 @@ Use /reminder to configure\\.`;
         .text(newSettings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
         .row()
         .text("⏱️ Interval", "reminder_interval_menu")
-        .row()
-        .text("🕐 Start Time", "reminder_time_menu")
         .row()
         .text("🌍 Timezone", "reminder_timezone_menu")
         .row()
@@ -138,7 +121,6 @@ Use /reminder to configure\\.`;
 
 Status: ${settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
 Interval: ${settings.reminderIntervalMinutes} minutes
-Start Time: ${settings.reminderStartTime}
 Timezone: ${settings.reminderTimezone}
 
 Use /reminder to configure\\.`;
@@ -147,91 +129,6 @@ Use /reminder to configure\\.`;
           .text(settings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
           .row()
           .text("⏱️ Interval", "reminder_interval_menu")
-          .row()
-          .text("🕐 Start Time", "reminder_time_menu")
-          .row()
-          .text("🌍 Timezone", "reminder_timezone_menu")
-          .row()
-          .text("📊 View Settings", "reminder_status");
-
-        await ctx.editMessageText(message, {
-          parse_mode: "MarkdownV2",
-          reply_markup: keyboard,
-        });
-      },
-    }),
-  ),
-  {
-    pattern: "reminder_time_menu",
-    handler: async (ctx) => {
-      if (!ctx?.callbackQuery) {
-        return;
-      }
-
-      await ctx.answerCallbackQuery();
-
-      const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
-      const settings = await stub.getReminderSettings();
-
-      const timeOptions = generateTimeOptions();
-      const keyboard = new InlineKeyboard();
-
-      // Show hours in a grid (4 columns)
-      for (let i = 0; i < timeOptions.length; i += 4) {
-        const row = timeOptions.slice(i, i + 4);
-        row.forEach((time) => {
-          const isSelected = settings.reminderStartTime === time.value;
-          keyboard.text(isSelected ? `✓ ${time.label}` : time.label, time.callback);
-        });
-        keyboard.row();
-      }
-      keyboard.text("◀️ Back", "reminder_status");
-
-      await ctx.editMessageText(
-        "🕐 *Select Start Time*\n\nChoose when reminders should start each day\\.\nCurrent: *" +
-          settings.reminderStartTime +
-          "*",
-        {
-          parse_mode: "MarkdownV2",
-          reply_markup: keyboard,
-        },
-      );
-    },
-  },
-  ...generateTimeOptions().map(
-    (time): Callback => ({
-      pattern: time.callback,
-      handler: async (ctx) => {
-        if (!ctx?.callbackQuery) {
-          return;
-        }
-
-        await ctx.answerCallbackQuery();
-
-        const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
-        await stub.updateReminderSettings({
-          reminderStartTime: time.value,
-        });
-
-        await ctx.reply(`✅ Start time set to ${time.label}`);
-
-        // Return to main menu
-        const settings = await stub.getReminderSettings();
-        const message = `🔔 *Reminder Settings*
-
-Status: ${settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
-Interval: ${settings.reminderIntervalMinutes} minutes
-Start Time: ${settings.reminderStartTime}
-Timezone: ${settings.reminderTimezone}
-
-Use /reminder to configure\\.`;
-
-        const keyboard = new InlineKeyboard()
-          .text(settings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
-          .row()
-          .text("⏱️ Interval", "reminder_interval_menu")
-          .row()
-          .text("🕐 Start Time", "reminder_time_menu")
           .row()
           .text("🌍 Timezone", "reminder_timezone_menu")
           .row()
@@ -300,7 +197,6 @@ Use /reminder to configure\\.`;
 
 Status: ${settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
 Interval: ${settings.reminderIntervalMinutes} minutes
-Start Time: ${settings.reminderStartTime}
 Timezone: ${settings.reminderTimezone}
 
 Use /reminder to configure\\.`;
@@ -309,8 +205,6 @@ Use /reminder to configure\\.`;
           .text(settings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
           .row()
           .text("⏱️ Interval", "reminder_interval_menu")
-          .row()
-          .text("🕐 Start Time", "reminder_time_menu")
           .row()
           .text("🌍 Timezone", "reminder_timezone_menu")
           .row()
@@ -339,7 +233,6 @@ Use /reminder to configure\\.`;
 
 Status: ${settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
 Interval: ${settings.reminderIntervalMinutes} minutes
-Start Time: ${settings.reminderStartTime}
 Timezone: ${settings.reminderTimezone}
 
 Use the buttons below to configure your reminders\\.`;
@@ -348,8 +241,6 @@ Use the buttons below to configure your reminders\\.`;
         .text(settings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
         .row()
         .text("⏱️ Interval", "reminder_interval_menu")
-        .row()
-        .text("🕐 Start Time", "reminder_time_menu")
         .row()
         .text("🌍 Timezone", "reminder_timezone_menu")
         .row()

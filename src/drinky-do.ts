@@ -124,7 +124,6 @@ export class Drinky extends DurableObject {
   async updateReminderSettings(settings: {
     reminderEnabled?: boolean;
     reminderIntervalMinutes?: number;
-    reminderStartTime?: string;
     reminderTimezone?: string;
   }) {
     console.log("[updateReminderSettings] Updating settings", {
@@ -140,7 +139,6 @@ export class Drinky extends DurableObject {
     const updateData: {
       reminderEnabled?: boolean;
       reminderIntervalMinutes?: number;
-      reminderStartTime?: string;
       reminderTimezone?: string;
     } = {};
 
@@ -149,9 +147,6 @@ export class Drinky extends DurableObject {
     }
     if (settings.reminderIntervalMinutes !== undefined) {
       updateData.reminderIntervalMinutes = settings.reminderIntervalMinutes;
-    }
-    if (settings.reminderStartTime !== undefined) {
-      updateData.reminderStartTime = settings.reminderStartTime;
     }
     if (settings.reminderTimezone !== undefined) {
       updateData.reminderTimezone = settings.reminderTimezone;
@@ -168,7 +163,6 @@ export class Drinky extends DurableObject {
       userId: updatedUser.id,
       reminderEnabled: updatedUser.reminderEnabled,
       reminderIntervalMinutes: updatedUser.reminderIntervalMinutes,
-      reminderStartTime: updatedUser.reminderStartTime,
     });
 
     // If enabling reminders, schedule the first one
@@ -180,7 +174,6 @@ export class Drinky extends DurableObject {
       await this.cancelReminder();
     } else if (
       settings.reminderIntervalMinutes !== undefined ||
-      settings.reminderStartTime !== undefined ||
       settings.reminderTimezone !== undefined
     ) {
       // If interval, start time, or timezone changed, reschedule if reminders are enabled
@@ -207,7 +200,6 @@ export class Drinky extends DurableObject {
     return {
       reminderEnabled: currentUser.reminderEnabled,
       reminderIntervalMinutes: currentUser.reminderIntervalMinutes,
-      reminderStartTime: currentUser.reminderStartTime,
       reminderTimezone: currentUser.reminderTimezone,
     };
   }
@@ -224,13 +216,11 @@ export class Drinky extends DurableObject {
 
     console.log("[scheduleNextReminder] Calculating next reminder", {
       userId: currentUser.id,
-      startTime: currentUser.reminderStartTime,
       intervalMinutes: currentUser.reminderIntervalMinutes,
       timezone: currentUser.reminderTimezone,
     });
 
     const nextReminderTime = this.calculateNextReminderTime(
-      currentUser.reminderStartTime,
       currentUser.reminderIntervalMinutes,
       currentUser.reminderTimezone,
     );
@@ -240,7 +230,6 @@ export class Drinky extends DurableObject {
         "[scheduleNextReminder] Failed to calculate next reminder time - returning null",
         {
           userId: currentUser.id,
-          startTime: currentUser.reminderStartTime,
           intervalMinutes: currentUser.reminderIntervalMinutes,
         },
       );
@@ -262,7 +251,6 @@ export class Drinky extends DurableObject {
       });
       // Try to calculate again - this shouldn't happen if logic is correct, but handle edge case
       const recalculated = this.calculateNextReminderTime(
-        currentUser.reminderStartTime,
         currentUser.reminderIntervalMinutes,
         currentUser.reminderTimezone,
       );
@@ -406,34 +394,12 @@ export class Drinky extends DurableObject {
 
   // Helper Methods
 
-  calculateNextReminderTime(
-    startTime: string,
-    intervalMinutes: number,
-    _timezone: string,
-  ): number | null {
+  calculateNextReminderTime(intervalMinutes: number, _timezone: string): number | null {
     try {
       console.log("[calculateNextReminderTime] Starting calculation", {
-        startTime,
         intervalMinutes,
         timezone: _timezone,
       });
-
-      const [hours, minutes] = startTime.split(":").map(Number);
-      if (
-        isNaN(hours) ||
-        isNaN(minutes) ||
-        hours < 0 ||
-        hours > 23 ||
-        minutes < 0 ||
-        minutes > 59
-      ) {
-        console.error("[calculateNextReminderTime] Invalid time format", {
-          startTime,
-          hours,
-          minutes,
-        });
-        return null;
-      }
 
       const now = new Date();
       console.log("[calculateNextReminderTime] Current time", {
@@ -442,7 +408,7 @@ export class Drinky extends DurableObject {
       });
 
       const todayStart = new Date(now);
-      todayStart.setUTCHours(hours, minutes, 0, 0);
+      todayStart.setUTCHours(1, 30, 0, 0);
       console.log("[calculateNextReminderTime] Today start time", {
         todayStart: todayStart.toISOString(),
         todayStartUTC: todayStart.getTime(),
