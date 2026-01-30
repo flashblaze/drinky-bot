@@ -28,6 +28,7 @@ export class Drinky extends DurableObject {
   }
 
   async _migrate() {
+    console.log("[_migrate] Migrating database");
     // oxlint-disable-next-line typescript/no-floating-promises
     migrate(this.db, migrations);
   }
