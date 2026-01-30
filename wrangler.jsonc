@@ -35,7 +35,7 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "DRINKY",
+        "name": "DRINKY_STATE",
         "class_name": "DrinkyState",
       },
     ],
