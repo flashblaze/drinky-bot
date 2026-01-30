@@ -8,7 +8,7 @@ export const statsCommand: Command = {
       return;
     }
 
-    const stub = ctx.env.DRINKY.getByName(ctx.message.from.id.toString());
+    const stub = ctx.env.DRINKY_STATE.getByName(ctx.message.from.id.toString());
 
     const timestamp = ctx.message.date ? ctx.message.date * 1000 : Date.now();
     const stats = await stub.getStats(timestamp);

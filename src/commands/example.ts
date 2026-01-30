@@ -14,7 +14,7 @@ export const exampleCommand: Command = {
   description: "Example command",
   handler: async (ctx) => {
     // Access environment variables via ctx.env
-    // Access DurableObject via ctx.env.DRINKY.getByName(userId)
+    // Access DurableObject via ctx.env.DRINKY_STATE.getByName(userId)
     // Access message data via ctx.message
 
     if (!ctx?.message) {

@@ -9,7 +9,7 @@ export const currentAlarmCallback: Callback = {
 
     await ctx.answerCallbackQuery();
 
-    const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
+    const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
     const alarm = await stub.getCurrentAlarm();
     await ctx.reply(`Current alarm: ${alarm}`);
   },

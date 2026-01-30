@@ -9,7 +9,7 @@ export const reminderCommand: Command = {
       return;
     }
 
-    const stub = ctx.env.DRINKY.getByName(ctx.message.from.id.toString());
+    const stub = ctx.env.DRINKY_STATE.getByName(ctx.message.from.id.toString());
     const currentUser = await stub.selectCurrentUser();
 
     if (!currentUser) {

@@ -9,7 +9,7 @@ export const goalCommand: Command = {
     }
 
     if (!ctx.match) {
-      const stub = ctx.env.DRINKY.getByName(ctx.message.from.id.toString());
+      const stub = ctx.env.DRINKY_STATE.getByName(ctx.message.from.id.toString());
       const currentUser = await stub.selectCurrentUser();
       if (!currentUser) {
         await ctx.reply("User not found");
@@ -34,7 +34,7 @@ export const goalCommand: Command = {
       return;
     }
 
-    const stub = ctx.env.DRINKY.getByName(ctx.message.from.id.toString());
+    const stub = ctx.env.DRINKY_STATE.getByName(ctx.message.from.id.toString());
     await stub.updateGoal(transformed);
 
     await ctx.reply(`Goal set to ${transformed} ml`);

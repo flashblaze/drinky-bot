@@ -34,7 +34,7 @@ export const logWaterCallbacks: Callback[] = [
         }
 
         await ctx.answerCallbackQuery();
-        const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
+        const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
         await stub.insertWaterLog(amount.value);
         await ctx.reply(`💧 Logged ${amount.label}`);
       },

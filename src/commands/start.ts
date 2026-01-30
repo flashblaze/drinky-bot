@@ -9,7 +9,7 @@ export const startCommand: Command = {
       return;
     }
 
-    const stub = ctx.env.DRINKY.getByName(ctx.message.from.id.toString());
+    const stub = ctx.env.DRINKY_STATE.getByName(ctx.message.from.id.toString());
     const existingUser = await stub.selectCurrentUser();
 
     const keyboard = new InlineKeyboard()

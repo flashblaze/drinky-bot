@@ -16,7 +16,7 @@ export const exampleCallback: Callback = {
     await ctx.answerCallbackQuery();
 
     // Access environment variables via ctx.env
-    // Access DurableObject via ctx.env.DRINKY.getByName(userId)
+    // Access DurableObject via ctx.env.DRINKY_STATE.getByName(userId)
     // Access callback data via ctx.callbackQuery
 
     await ctx.reply("This is an example callback.");

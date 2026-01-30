@@ -27,7 +27,7 @@ export const reminderCallbacks: Callback[] = [
 
       await ctx.answerCallbackQuery();
 
-      const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
+      const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
       const settings = await stub.getReminderSettings();
 
       await stub.updateReminderSettings({
@@ -74,7 +74,7 @@ Use /reminder to configure\\.`;
 
       await ctx.answerCallbackQuery();
 
-      const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
+      const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
       const settings = await stub.getReminderSettings();
 
       const keyboard = new InlineKeyboard();
@@ -108,7 +108,7 @@ Use /reminder to configure\\.`;
 
         await ctx.answerCallbackQuery();
 
-        const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
+        const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
         await stub.updateReminderSettings({
           reminderIntervalMinutes: interval.value,
         });
@@ -150,7 +150,7 @@ Use /reminder to configure\\.`;
 
       await ctx.answerCallbackQuery();
 
-      const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
+      const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
       const settings = await stub.getReminderSettings();
 
       const keyboard = new InlineKeyboard();
@@ -184,7 +184,7 @@ Use /reminder to configure\\.`;
 
         await ctx.answerCallbackQuery();
 
-        const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
+        const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
         await stub.updateReminderSettings({
           reminderTimezone: tz.value,
         });
@@ -226,7 +226,7 @@ Use /reminder to configure\\.`;
 
       await ctx.answerCallbackQuery();
 
-      const stub = ctx.env.DRINKY.getByName(ctx.callbackQuery.from.id.toString());
+      const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
       const settings = await stub.getReminderSettings();
 
       const message = `🔔 *Reminder Settings*
