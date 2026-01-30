@@ -21,6 +21,11 @@ export const startCommand: Command = {
       .row()
       .text("⏰ Next alarm", "get_next_alarm");
 
+    const isDev = ctx.env.MODE === "development";
+    if (isDev) {
+      keyboard.row().text("💀 Delete current user", "delete_user");
+    }
+
     if (existingUser) {
       const name =
         existingUser.firstName && existingUser.lastName

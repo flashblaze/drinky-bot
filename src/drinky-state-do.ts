@@ -26,6 +26,18 @@ export class DrinkyState extends DurableObject {
     });
   }
 
+  // Development Commands
+
+  async deleteUser() {
+    const currentUser = await this.selectCurrentUser();
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    await this.db.delete(waterLogTable).where(eq(waterLogTable.userId, currentUser.id));
+    return this.db.delete(userTable).where(eq(userTable.id, currentUser.id)).returning().get();
+  }
+
   async insert(user: typeof userTable.$inferInsert) {
     return this.db.insert(userTable).values(user).returning().get();
   }

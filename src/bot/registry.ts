@@ -8,6 +8,7 @@ import { statsCommand } from "../commands/stats";
 import { settingsCommand } from "../commands/settings";
 import { settingsCallbacks } from "../callbacks/settings";
 import { nextAlarmCallback } from "../callbacks/next-alarm";
+import { devCommandsCallbacks } from "../callbacks/dev-commands";
 
 /**
  * Registry of all commands and callbacks.
@@ -30,5 +31,6 @@ export const callbacks: Callback[] = [
   statsCallback,
   ...settingsCallbacks,
   nextAlarmCallback,
+  ...devCommandsCallbacks,
   // Add more callbacks here
 ];
