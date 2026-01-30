@@ -1,5 +1,6 @@
 import { Bot } from "grammy";
 import type { env } from "cloudflare:workers";
+import tzLookup from "tz-lookup";
 import type { Command, Callback, BotContext } from "./types";
 
 export interface BotConfig {
@@ -29,6 +30,26 @@ export const setupBot = async (config: BotConfig): Promise<Bot> => {
       await callback.handler(botContext);
     });
   }
+
+  bot.on(":location", async (ctx) => {
+    if (!ctx.message?.location || !ctx.from?.id) {
+      return;
+    }
+
+    const { latitude, longitude } = ctx.message.location;
+    const timezone = tzLookup(latitude, longitude);
+    const botContext = ctx as BotContext;
+    botContext.env = config.env;
+
+    const stub = botContext.env.DRINKY_STATE.getByName(ctx.from.id.toString());
+    await stub.updateReminderSettings({
+      reminderTimezone: timezone,
+    });
+
+    await ctx.reply(`Timezone set to ${timezone}`, {
+      reply_markup: { remove_keyboard: true },
+    });
+  });
 
   await bot.init();
   return bot;

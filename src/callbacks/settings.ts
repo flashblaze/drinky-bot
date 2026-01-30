@@ -1,4 +1,4 @@
-import { InlineKeyboard } from "grammy";
+import { InlineKeyboard, Keyboard } from "grammy";
 import type { Callback } from "../bot/types";
 import { escapeMarkdown } from "../utils";
 
@@ -9,7 +9,7 @@ const INTERVALS = [
   { label: "3 hours", value: 180, callback: "reminder_interval_180" },
 ] as const;
 
-const COMMON_TIMEZONES = [
+const MANUAL_TIMEZONES = [
   { label: "UTC", value: "UTC", callback: "reminder_timezone_UTC" },
   { label: "EST (UTC-5)", value: "America/New_York", callback: "reminder_timezone_EST" },
   { label: "PST (UTC-8)", value: "America/Los_Angeles", callback: "reminder_timezone_PST" },
@@ -136,6 +136,19 @@ Use /settings to configure\\.`;
     }),
   ),
   {
+    pattern: "reminder_timezone_auto",
+    handler: async (ctx) => {
+      await ctx.answerCallbackQuery();
+      const locationKeyboard = new Keyboard()
+        .requestLocation("📍 Share Location")
+        .resized();
+
+      await ctx.reply("Please share your location to automatically detect your timezone.", {
+        reply_markup: locationKeyboard,
+      });
+    },
+  },
+  {
     pattern: "reminder_timezone_menu",
     handler: async (ctx) => {
       if (!ctx?.callbackQuery) {
@@ -148,10 +161,14 @@ Use /settings to configure\\.`;
       const settings = await stub.getReminderSettings();
 
       const keyboard = new InlineKeyboard();
-      COMMON_TIMEZONES.forEach((tz, index) => {
+      
+      // Add Auto-detect button
+      keyboard.text("📍 Auto-detect from Location", "reminder_timezone_auto").row();
+
+      MANUAL_TIMEZONES.forEach((tz, index) => {
         const isSelected = settings.reminderTimezone === tz.value;
         keyboard.text(isSelected ? `✓ ${tz.label}` : tz.label, tz.callback);
-        if (index % 2 === 1 || index === COMMON_TIMEZONES.length - 1) {
+        if (index % 2 === 1 || index === MANUAL_TIMEZONES.length - 1) {
           keyboard.row();
         }
       });
@@ -168,7 +185,7 @@ Use /settings to configure\\.`;
       );
     },
   },
-  ...COMMON_TIMEZONES.map(
+  ...MANUAL_TIMEZONES.map(
     (tz): Callback => ({
       pattern: tz.callback,
       handler: async (ctx) => {

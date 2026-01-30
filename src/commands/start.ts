@@ -1,4 +1,4 @@
-import { InlineKeyboard } from "grammy";
+import { InlineKeyboard, Keyboard } from "grammy";
 import type { Command } from "../bot/types";
 
 export const startCommand: Command = {
@@ -27,6 +27,17 @@ export const startCommand: Command = {
     }
 
     if (existingUser) {
+      // Only ask for location if timezone is default UTC
+      if (existingUser.reminderTimezone === "UTC") {
+        const locationKeyboard = new Keyboard()
+          .requestLocation("📍 Set Timezone (Send Location)")
+          .resized();
+
+        await ctx.reply("Please share your location to set your timezone correctly", {
+          reply_markup: locationKeyboard,
+        });
+      }
+
       const name =
         existingUser.firstName && existingUser.lastName
           ? `${existingUser.firstName} ${existingUser.lastName}`
@@ -46,6 +57,15 @@ export const startCommand: Command = {
         languageCode: ctx.message.from.language_code ?? "",
         firstName: ctx.message.from.first_name,
         lastName: ctx.message.from.last_name ?? "",
+      });
+
+      // Ask for location for new users
+      const locationKeyboard = new Keyboard()
+        .requestLocation("📍 Set Timezone (Send Location)")
+        .resized();
+
+      await ctx.reply("Please share your location to set your timezone correctly", {
+        reply_markup: locationKeyboard,
       });
 
       const name =
