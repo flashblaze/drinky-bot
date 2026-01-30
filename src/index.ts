@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import type { env } from "cloudflare:workers";
-import { Drinky } from "./drinky-do";
+import { DrinkyState } from "./drinky-state-do";
 import { setupBot } from "./bot/setup";
 import { commands, callbacks } from "./bot/registry";
 
 const app = new Hono<{ Bindings: typeof env }>();
 
-export { Drinky };
+export { DrinkyState };
 
 app.post("/webhook", async (c) => {
   try {

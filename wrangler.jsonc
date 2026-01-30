@@ -26,12 +26,17 @@
       "new_sqlite_classes": ["Drinky"],
       "tag": "v1",
     },
+    {
+      "deleted_classes": ["Drinky"],
+      "new_sqlite_classes": ["DrinkyState"],
+      "tag": "v2",
+    },
   ],
   "durable_objects": {
     "bindings": [
       {
         "name": "DRINKY",
-        "class_name": "Drinky",
+        "class_name": "DrinkyState",
       },
     ],
   },

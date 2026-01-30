@@ -7,7 +7,7 @@ import { relations } from "./db/relations";
 import { and, desc, eq, gte, lt, sum } from "drizzle-orm";
 import { Bot } from "grammy";
 
-export class Drinky extends DurableObject {
+export class DrinkyState extends DurableObject {
   storage: DurableObjectStorage;
   db: DrizzleSqliteDODatabase<any>;
   env: Cloudflare.Env;
@@ -21,14 +21,9 @@ export class Drinky extends DurableObject {
     // Otherwise you will need to run `this.migrate()` in any function
     // that accesses the Drizzle database `this.db`.
 
-    // oxlint-disable-next-line typescript/no-floating-promises
     ctx.blockConcurrencyWhile(async () => {
-      await this._migrate();
+      await migrate(this.db, migrations);
     });
-  }
-
-  async _migrate() {
-    await migrate(this.db, migrations);
   }
 
   async insert(user: typeof userTable.$inferInsert) {
