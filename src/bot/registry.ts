@@ -1,13 +1,13 @@
 import type { Command, Callback } from "./types";
 import { startCommand } from "../commands/start";
-import { logWaterCallbacks } from "../callbacks/logWater";
+import { logWaterCallbacks } from "../callbacks/log-water";
 import { statsCallback } from "../callbacks/stats";
 import { goalCommand } from "../commands/goal";
 import { logCommand } from "../commands/log";
 import { statsCommand } from "../commands/stats";
-import { reminderCommand } from "../commands/reminder";
-import { reminderCallbacks } from "../callbacks/reminder";
-import { currentAlarmCallback } from "../callbacks/current-alarm";
+import { settingsCommand } from "../commands/settings";
+import { settingsCallbacks } from "../callbacks/settings";
+import { nextAlarmCallback } from "../callbacks/next-alarm";
 
 /**
  * Registry of all commands and callbacks.
@@ -21,14 +21,14 @@ export const commands: Command[] = [
   goalCommand,
   logCommand,
   statsCommand,
-  reminderCommand,
+  settingsCommand,
   // Add more commands here
 ];
 
 export const callbacks: Callback[] = [
   ...logWaterCallbacks,
   statsCallback,
-  ...reminderCallbacks,
-  currentAlarmCallback,
+  ...settingsCallbacks,
+  nextAlarmCallback,
   // Add more callbacks here
 ];

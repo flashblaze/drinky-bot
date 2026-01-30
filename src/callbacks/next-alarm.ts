@@ -1,7 +1,7 @@
 import type { Callback } from "../bot/types";
 
-export const currentAlarmCallback: Callback = {
-  pattern: "get_current_alarm",
+export const nextAlarmCallback: Callback = {
+  pattern: "get_next_alarm",
   handler: async (ctx) => {
     if (!ctx?.callbackQuery) {
       return;
@@ -10,7 +10,7 @@ export const currentAlarmCallback: Callback = {
     await ctx.answerCallbackQuery();
 
     const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
-    const alarm = await stub.getCurrentAlarm();
-    await ctx.reply(`Current alarm: ${alarm}`);
+    const alarm = await stub.getNextAlarm();
+    await ctx.reply(`Next alarm: ${alarm}`);
   },
 };

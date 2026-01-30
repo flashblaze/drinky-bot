@@ -1,5 +1,6 @@
 import { InlineKeyboard } from "grammy";
 import type { Callback } from "../bot/types";
+import { escapeMarkdown } from "../utils";
 
 const INTERVALS = [
   { label: "30 min", value: 30, callback: "reminder_interval_30" },
@@ -17,7 +18,7 @@ const COMMON_TIMEZONES = [
   { label: "JST (UTC+9)", value: "Asia/Tokyo", callback: "reminder_timezone_JST" },
 ] as const;
 
-export const reminderCallbacks: Callback[] = [
+export const settingsCallbacks: Callback[] = [
   {
     pattern: "reminder_toggle",
     handler: async (ctx) => {
@@ -42,22 +43,18 @@ export const reminderCallbacks: Callback[] = [
       await ctx.reply(statusText);
 
       // Show updated settings
-      const message = `🔔 *Reminder Settings*
-
+      const message = `
 Status: ${newSettings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
 Interval: ${newSettings.reminderIntervalMinutes} minutes
-Timezone: ${newSettings.reminderTimezone}
-
-Use /reminder to configure\\.`;
+Timezone: ${escapeMarkdown(newSettings.reminderTimezone)}
+Use /settings to configure\\.`;
 
       const keyboard = new InlineKeyboard()
         .text(newSettings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
         .row()
         .text("⏱️ Interval", "reminder_interval_menu")
         .row()
-        .text("🌍 Timezone", "reminder_timezone_menu")
-        .row()
-        .text("📊 View Settings", "reminder_status");
+        .text("🌍 Timezone", "reminder_timezone_menu");
 
       await ctx.editMessageText(message, {
         parse_mode: "MarkdownV2",
@@ -85,7 +82,7 @@ Use /reminder to configure\\.`;
           keyboard.row();
         }
       });
-      keyboard.text("◀️ Back", "reminder_status");
+      keyboard.text("◀️ Back", "settings");
 
       await ctx.editMessageText(
         "⏱️ *Select Reminder Interval*\n\nChoose how often you want to be reminded\\.\nCurrent: *" +
@@ -117,22 +114,19 @@ Use /reminder to configure\\.`;
 
         // Return to main menu
         const settings = await stub.getReminderSettings();
-        const message = `🔔 *Reminder Settings*
-
+        const message = `
 Status: ${settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
 Interval: ${settings.reminderIntervalMinutes} minutes
-Timezone: ${settings.reminderTimezone}
+Timezone: ${escapeMarkdown(settings.reminderTimezone)}
 
-Use /reminder to configure\\.`;
+Use /settings to configure\\.`;
 
         const keyboard = new InlineKeyboard()
           .text(settings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
           .row()
           .text("⏱️ Interval", "reminder_interval_menu")
           .row()
-          .text("🌍 Timezone", "reminder_timezone_menu")
-          .row()
-          .text("📊 View Settings", "reminder_status");
+          .text("🌍 Timezone", "reminder_timezone_menu");
 
         await ctx.editMessageText(message, {
           parse_mode: "MarkdownV2",
@@ -161,11 +155,11 @@ Use /reminder to configure\\.`;
           keyboard.row();
         }
       });
-      keyboard.text("◀️ Back", "reminder_status");
+      keyboard.text("◀️ Back", "settings");
 
       await ctx.editMessageText(
         "🌍 *Select Timezone*\n\nChoose your timezone\\.\nCurrent: *" +
-          settings.reminderTimezone +
+          escapeMarkdown(settings.reminderTimezone) +
           "*",
         {
           parse_mode: "MarkdownV2",
@@ -193,22 +187,19 @@ Use /reminder to configure\\.`;
 
         // Return to main menu
         const settings = await stub.getReminderSettings();
-        const message = `🔔 *Reminder Settings*
-
+        const message = `
 Status: ${settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
 Interval: ${settings.reminderIntervalMinutes} minutes
-Timezone: ${settings.reminderTimezone}
+Timezone: ${escapeMarkdown(settings.reminderTimezone)}
 
-Use /reminder to configure\\.`;
+Use /settings to configure\\.`;
 
         const keyboard = new InlineKeyboard()
           .text(settings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
           .row()
           .text("⏱️ Interval", "reminder_interval_menu")
           .row()
-          .text("🌍 Timezone", "reminder_timezone_menu")
-          .row()
-          .text("📊 View Settings", "reminder_status");
+          .text("🌍 Timezone", "reminder_timezone_menu");
 
         await ctx.editMessageText(message, {
           parse_mode: "MarkdownV2",
@@ -218,7 +209,7 @@ Use /reminder to configure\\.`;
     }),
   ),
   {
-    pattern: "reminder_status",
+    pattern: "settings",
     handler: async (ctx) => {
       if (!ctx?.callbackQuery) {
         return;
@@ -229,11 +220,10 @@ Use /reminder to configure\\.`;
       const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
       const settings = await stub.getReminderSettings();
 
-      const message = `🔔 *Reminder Settings*
-
+      const message = `
 Status: ${settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled"}
 Interval: ${settings.reminderIntervalMinutes} minutes
-Timezone: ${settings.reminderTimezone}
+Timezone: ${escapeMarkdown(settings.reminderTimezone)}
 
 Use the buttons below to configure your reminders\\.`;
 
@@ -242,9 +232,7 @@ Use the buttons below to configure your reminders\\.`;
         .row()
         .text("⏱️ Interval", "reminder_interval_menu")
         .row()
-        .text("🌍 Timezone", "reminder_timezone_menu")
-        .row()
-        .text("📊 View Settings", "reminder_status");
+        .text("🌍 Timezone", "reminder_timezone_menu");
 
       await ctx.reply(message, {
         parse_mode: "MarkdownV2",

@@ -1,9 +1,10 @@
 import { InlineKeyboard } from "grammy";
 import type { Command } from "../bot/types";
+import { escapeMarkdown } from "../utils";
 
-export const reminderCommand: Command = {
-  name: "reminder",
-  description: "Configure water reminder settings",
+export const settingsCommand: Command = {
+  name: "settings",
+  description: "View and configure settings",
   handler: async (ctx) => {
     if (!ctx?.message) {
       return;
@@ -21,24 +22,21 @@ export const reminderCommand: Command = {
 
     const statusText = settings.reminderEnabled ? "✅ Enabled" : "❌ Disabled";
     const intervalText = `${settings.reminderIntervalMinutes} minutes`;
-    const timezoneText = settings.reminderTimezone;
+    const timezoneText = escapeMarkdown(settings.reminderTimezone);
 
-    const message = `🔔 *Reminder Settings*
-
+    const message = `
 Status: ${statusText}
 Interval: ${intervalText}
 Timezone: ${timezoneText}
 
-Use the buttons below to configure your reminders\\.`;
+Use the buttons below to configure your settings\\.`;
 
     const keyboard = new InlineKeyboard()
       .text(settings.reminderEnabled ? "❌ Disable" : "✅ Enable", "reminder_toggle")
       .row()
       .text("⏱️ Interval", "reminder_interval_menu")
       .row()
-      .text("🌍 Timezone", "reminder_timezone_menu")
-      .row()
-      .text("📊 View Settings", "reminder_status");
+      .text("🌍 Timezone", "reminder_timezone_menu");
 
     await ctx.reply(message, {
       parse_mode: "MarkdownV2",

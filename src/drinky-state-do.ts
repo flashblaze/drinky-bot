@@ -30,7 +30,7 @@ export class DrinkyState extends DurableObject {
     return this.db.insert(userTable).values(user).returning().get();
   }
 
-  async getCurrentAlarm() {
+  async getNextAlarm() {
     const alarm = await this.storage.getAlarm();
     if (!alarm) {
       return null;

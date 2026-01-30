@@ -20,7 +20,7 @@ export const logWaterCallbacks: Callback[] = [
         .text("250 ml", "log_water_250")
         .text("500 ml", "log_water_500");
 
-      await ctx.reply("💧 Choose amount", {
+      await ctx.reply("Choose amount", {
         reply_markup: keyboard,
       });
     },
@@ -36,7 +36,7 @@ export const logWaterCallbacks: Callback[] = [
         await ctx.answerCallbackQuery();
         const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
         await stub.insertWaterLog(amount.value);
-        await ctx.reply(`💧 Logged ${amount.label}`);
+        await ctx.reply(`Logged ${amount.label}`);
       },
     }),
   ),

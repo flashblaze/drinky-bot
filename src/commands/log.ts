@@ -30,6 +30,6 @@ export const logCommand: Command = {
     const stub = ctx.env.DRINKY_STATE.getByName(ctx.message.from.id.toString());
     await stub.insertWaterLog(amount);
 
-    await ctx.reply(`💧 Logged ${amount} ml`);
+    await ctx.reply(`Logged ${amount} ml`);
   },
 };

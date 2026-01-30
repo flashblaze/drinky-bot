@@ -13,15 +13,13 @@ export const startCommand: Command = {
     const existingUser = await stub.selectCurrentUser();
 
     const keyboard = new InlineKeyboard()
-      .text("💧 Log Water", "log_water")
-      .row()
-      .text("🎯 Goal", "goal")
+      .text("🥤 Log water", "log_water")
       .row()
       .text("📊 Today's stats", "stats")
       .row()
-      .text("🔔 Reminders", "reminder_status")
+      .text("⚙️ Settings", "settings")
       .row()
-      .text("Get current alarm", "get_current_alarm");
+      .text("⏰ Next alarm", "get_next_alarm");
 
     if (existingUser) {
       const name =
