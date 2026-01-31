@@ -1,5 +1,5 @@
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { startOfDay, addDays } from "date-fns";
+import { startOfDay, addDays, addHours, getHours } from "date-fns";
 
 export const getLocalStartOfDay = (timestamp: number, timezone: string): string => {
   try {
@@ -41,6 +41,53 @@ export const validateTimezone = (timezone: string): boolean => {
     return true;
   } catch {
     return false;
+  }
+};
+
+export const calculateNextReminderTime = (
+  intervalMinutes: number,
+  timezone: string,
+  now = Date.now(),
+): number | null => {
+  try {
+    const START_HOUR = 6; // 6 AM Local
+
+    // 1. Get Today's Start Time (6 AM Local Today)
+    const zonedNow = toZonedTime(now, timezone);
+    const zonedDayStart = startOfDay(zonedNow);
+    const zonedTodayStart = addHours(zonedDayStart, START_HOUR);
+    const todayStartUtc = fromZonedTime(zonedTodayStart, timezone).getTime();
+
+    // If todayStart is in the future, schedule for then
+    if (todayStartUtc > now) {
+      return todayStartUtc;
+    }
+
+    // 2. Calculate intervals
+    const msSinceStart = now - todayStartUtc;
+    const intervalMs = intervalMinutes * 60 * 1000;
+
+    // Calculate which interval we're in
+    const currentInterval = Math.floor(msSinceStart / intervalMs);
+
+    // Calculate next interval time
+    const nextReminderUtc = todayStartUtc + (currentInterval + 1) * intervalMs;
+
+    // 3. Check if next reminder falls in quiet hours (00:00 - 06:00)
+    const zonedNextReminder = toZonedTime(nextReminderUtc, timezone);
+    const hour = getHours(zonedNextReminder);
+
+    if (hour < START_HOUR) {
+      // Schedule for Tomorrow 6 AM
+      const zonedTomorrowStart = addDays(zonedTodayStart, 1);
+      const tomorrowStartUtc = fromZonedTime(zonedTomorrowStart, timezone).getTime();
+      return tomorrowStartUtc;
+    }
+
+    return nextReminderUtc;
+  } catch (error) {
+    console.error("[calculateNextReminderTime] Error:", error);
+    return null;
   }
 };
 

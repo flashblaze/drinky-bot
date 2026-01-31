@@ -6,9 +6,12 @@ import { userTable, waterLogTable } from "./db/schema";
 import { relations } from "./db/relations";
 import { and, desc, eq, gte, lt, sum } from "drizzle-orm";
 import { Bot } from "grammy";
-import { getLocalStartOfDay, getLocalNextDay, validateTimezone } from "./utils";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { startOfDay, addHours, addDays, getHours } from "date-fns";
+import {
+  getLocalStartOfDay,
+  getLocalNextDay,
+  validateTimezone,
+  calculateNextReminderTime,
+} from "./utils";
 
 export class DrinkyState extends DurableObject {
   storage: DurableObjectStorage;
@@ -238,7 +241,7 @@ export class DrinkyState extends DurableObject {
       timezone: currentUser.reminderTimezone,
     });
 
-    const nextReminderTime = this.calculateNextReminderTime(
+    const nextReminderTime = calculateNextReminderTime(
       currentUser.reminderIntervalMinutes,
       currentUser.reminderTimezone,
     );
@@ -268,7 +271,7 @@ export class DrinkyState extends DurableObject {
         diffMs: nextReminderTime - now,
       });
       // Try to calculate again - this shouldn't happen if logic is correct, but handle edge case
-      const recalculated = this.calculateNextReminderTime(
+      const recalculated = calculateNextReminderTime(
         currentUser.reminderIntervalMinutes,
         currentUser.reminderTimezone,
       );
@@ -412,71 +415,7 @@ export class DrinkyState extends DurableObject {
 
   // Helper Methods
 
-  calculateNextReminderTime(intervalMinutes: number, timezone: string): number | null {
-    try {
-      console.log("[calculateNextReminderTime] Starting calculation", {
-        intervalMinutes,
-        timezone,
-      });
 
-      const now = Date.now();
-      const START_HOUR = 6; // 6 AM Local
-
-      // 1. Get Today's Start Time (6 AM Local Today)
-      const zonedNow = toZonedTime(now, timezone);
-      const zonedDayStart = startOfDay(zonedNow);
-      const zonedTodayStart = addHours(zonedDayStart, START_HOUR);
-      const todayStartUtc = fromZonedTime(zonedTodayStart, timezone).getTime();
-
-      // If todayStart is in the future, schedule for then
-      if (todayStartUtc > now) {
-        console.log(
-          "[calculateNextReminderTime] Start time hasn't occurred today, scheduling for today start",
-          { todayStart: new Date(todayStartUtc).toISOString() },
-        );
-        return todayStartUtc;
-      }
-
-      // 2. Calculate intervals
-      const msSinceStart = now - todayStartUtc;
-      const intervalMs = intervalMinutes * 60 * 1000;
-
-      // Calculate which interval we're in
-      const currentInterval = Math.floor(msSinceStart / intervalMs);
-
-      // Calculate next interval time
-      const nextReminderUtc = todayStartUtc + (currentInterval + 1) * intervalMs;
-
-      console.log("[calculateNextReminderTime] Next reminder calculated", {
-        nextReminder: new Date(nextReminderUtc).toISOString(),
-        intervalMs,
-      });
-
-      // 3. Check if next reminder falls in quiet hours (00:00 - 06:00)
-      const zonedNextReminder = toZonedTime(nextReminderUtc, timezone);
-      const hour = getHours(zonedNextReminder);
-
-      if (hour < START_HOUR) {
-        console.log(
-          "[calculateNextReminderTime] Next reminder is in quiet hours (00:00-06:00), scheduling for tomorrow start",
-          { hour },
-        );
-        // Schedule for Tomorrow 6 AM
-        const zonedTomorrowStart = addDays(zonedTodayStart, 1);
-        const tomorrowStartUtc = fromZonedTime(zonedTomorrowStart, timezone).getTime();
-        return tomorrowStartUtc;
-      }
-
-      console.log("[calculateNextReminderTime] Successfully calculated next reminder time", {
-        result: nextReminderUtc,
-        resultISO: new Date(nextReminderUtc).toISOString(),
-      });
-      return nextReminderUtc;
-    } catch (error) {
-      console.error("[calculateNextReminderTime] Error calculating next reminder time:", error);
-      return null;
-    }
-  }
 
   async checkGoalMet(): Promise<boolean> {
     const currentUser = await this.selectCurrentUser();
