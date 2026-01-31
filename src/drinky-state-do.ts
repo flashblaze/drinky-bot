@@ -224,19 +224,6 @@ export class DrinkyState extends DurableObject {
       return;
     }
 
-    console.log(
-      "[scheduleNextReminder] Calculating next reminder",
-      JSON.stringify(
-        {
-          userId: currentUser.id,
-          intervalMinutes: currentUser.reminderIntervalMinutes,
-          timezone: currentUser.reminderTimezone,
-        },
-        null,
-        2,
-      ),
-    );
-
     const nextReminderTime = calculateNextReminderTime(
       currentUser.reminderIntervalMinutes,
       currentUser.reminderTimezone,
@@ -336,19 +323,6 @@ export class DrinkyState extends DurableObject {
             2,
           ),
         );
-      } else {
-        console.log(
-          "[scheduleNextReminder] Alarm successfully set and verified",
-          JSON.stringify(
-            {
-              userId: currentUser.id,
-              alarmTime: verifyAlarm,
-              alarmTimeISO: new Date(verifyAlarm).toISOString(),
-            },
-            null,
-            2,
-          ),
-        );
       }
     } catch (error) {
       console.error(
@@ -418,7 +392,6 @@ export class DrinkyState extends DurableObject {
 
     try {
       await this.sendReminderMessage();
-      console.log("[alarm] Reminder message sent successfully");
     } catch (error) {
       console.error(
         "[alarm] Error sending reminder message, but continuing to reschedule",
@@ -436,7 +409,6 @@ export class DrinkyState extends DurableObject {
 
     try {
       await this.scheduleNextReminder();
-      console.log("[alarm] Next reminder scheduled successfully");
     } catch (error) {
       console.error(
         "[alarm] CRITICAL: Failed to schedule next reminder",
@@ -497,7 +469,7 @@ export class DrinkyState extends DurableObject {
     const stats = await this.getStats(Date.now());
     const totalAmount = stats?.totalAmount ? Number(stats.totalAmount) : 0;
 
-    const message = `💧 Reminder\\! You've had *${totalAmount} ml* today, goal is *${currentUser.goal} ml*\\.`;
+    const message = `Reminder\\! You've had *${totalAmount} ml* today, goal is *${currentUser.goal} ml*\\.`;
 
     const bot = new Bot(this.env.BOT_TOKEN);
     const { InlineKeyboard } = await import("grammy");
