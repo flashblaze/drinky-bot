@@ -154,11 +154,6 @@ export class DrinkyState extends DurableObject {
     reminderIntervalMinutes?: number;
     reminderTimezone?: string;
   }) {
-    console.log("[updateReminderSettings] Updating settings", {
-      userId: (await this.selectCurrentUser())?.id,
-      settings,
-    });
-
     const currentUser = await this.selectCurrentUser();
     if (!currentUser) {
       throw new Error("User not found");
@@ -187,12 +182,6 @@ export class DrinkyState extends DurableObject {
       .returning()
       .get();
 
-    console.log("[updateReminderSettings] User updated", {
-      userId: updatedUser.id,
-      reminderEnabled: updatedUser.reminderEnabled,
-      reminderIntervalMinutes: updatedUser.reminderIntervalMinutes,
-    });
-
     // If enabling reminders, schedule the first one
     if (settings.reminderEnabled === true) {
       console.log("[updateReminderSettings] Enabling reminders, scheduling first alarm");
@@ -205,9 +194,6 @@ export class DrinkyState extends DurableObject {
       settings.reminderTimezone !== undefined
     ) {
       // If interval, start time, or timezone changed, reschedule if reminders are enabled
-      console.log("[updateReminderSettings] Settings changed, checking if reschedule needed", {
-        reminderEnabled: updatedUser.reminderEnabled,
-      });
       if (updatedUser.reminderEnabled) {
         console.log("[updateReminderSettings] Reminders enabled, rescheduling");
         await this.scheduleNextReminder();
@@ -235,18 +221,21 @@ export class DrinkyState extends DurableObject {
   async scheduleNextReminder() {
     const currentUser = await this.selectCurrentUser();
     if (!currentUser || !currentUser.reminderEnabled) {
-      console.log("[scheduleNextReminder] User not found or reminders disabled", {
-        userId: currentUser?.id,
-        reminderEnabled: currentUser?.reminderEnabled,
-      });
       return;
     }
 
-    console.log("[scheduleNextReminder] Calculating next reminder", {
-      userId: currentUser.id,
-      intervalMinutes: currentUser.reminderIntervalMinutes,
-      timezone: currentUser.reminderTimezone,
-    });
+    console.log(
+      "[scheduleNextReminder] Calculating next reminder",
+      JSON.stringify(
+        {
+          userId: currentUser.id,
+          intervalMinutes: currentUser.reminderIntervalMinutes,
+          timezone: currentUser.reminderTimezone,
+        },
+        null,
+        2,
+      ),
+    );
 
     const nextReminderTime = calculateNextReminderTime(
       currentUser.reminderIntervalMinutes,
@@ -299,33 +288,54 @@ export class DrinkyState extends DurableObject {
     }
 
     try {
-      console.log("[scheduleNextReminder] Setting alarm", {
-        userId: currentUser.id,
-        alarmTimeToSet,
-        alarmTimeToSetISO: new Date(alarmTimeToSet).toISOString(),
-        now,
-        nowISO: new Date(now).toISOString(),
-        diffMs: alarmTimeToSet - now,
-        diffMinutes: Math.round((alarmTimeToSet - now) / (60 * 1000)),
-      });
+      console.log(
+        "[scheduleNextReminder] Setting alarm",
+        JSON.stringify(
+          {
+            userId: currentUser.id,
+            alarmTimeToSet,
+            alarmTimeToSetISO: new Date(alarmTimeToSet).toISOString(),
+            now,
+            nowISO: new Date(now).toISOString(),
+            diffMs: alarmTimeToSet - now,
+            diffMinutes: Math.round((alarmTimeToSet - now) / (60 * 1000)),
+          },
+          null,
+          2,
+        ),
+      );
       await this.storage.setAlarm(alarmTimeToSet);
 
       // Verify alarm was set
       const verifyAlarm = await this.storage.getAlarm();
       if (verifyAlarm !== alarmTimeToSet) {
-        console.error("[scheduleNextReminder] Alarm verification failed", {
-          userId: currentUser.id,
-          expected: alarmTimeToSet,
-          expectedISO: new Date(alarmTimeToSet).toISOString(),
-          actual: verifyAlarm,
-          actualISO: verifyAlarm ? new Date(verifyAlarm).toISOString() : null,
-        });
+        console.error(
+          "[scheduleNextReminder] Alarm verification failed",
+          JSON.stringify(
+            {
+              userId: currentUser.id,
+              expected: alarmTimeToSet,
+              expectedISO: new Date(alarmTimeToSet).toISOString(),
+              actual: verifyAlarm,
+              actualISO: verifyAlarm ? new Date(verifyAlarm).toISOString() : null,
+            },
+            null,
+            2,
+          ),
+        );
       } else {
-        console.log("[scheduleNextReminder] Alarm successfully set and verified", {
-          userId: currentUser.id,
-          alarmTime: verifyAlarm,
-          alarmTimeISO: new Date(verifyAlarm).toISOString(),
-        });
+        console.log(
+          "[scheduleNextReminder] Alarm successfully set and verified",
+          JSON.stringify(
+            {
+              userId: currentUser.id,
+              alarmTime: verifyAlarm,
+              alarmTimeISO: new Date(verifyAlarm).toISOString(),
+            },
+            null,
+            2,
+          ),
+        );
       }
     } catch (error) {
       console.error("[scheduleNextReminder] Error setting alarm", {
@@ -346,27 +356,18 @@ export class DrinkyState extends DurableObject {
 
   // Alarm handler - called when reminder time is reached
   async alarm() {
-    console.log("[alarm] Alarm triggered");
-
     const currentUser = await this.selectCurrentUser();
     if (!currentUser) {
       console.error("[alarm] No current user found");
       return;
     }
 
-    console.log("[alarm] Processing alarm for user", {
-      userId: currentUser.id,
-      reminderEnabled: currentUser.reminderEnabled,
-    });
-
     if (!currentUser.reminderEnabled) {
-      console.log("[alarm] Reminders disabled, skipping");
       return;
     }
 
     // Check if goal is met
     const goalMet = await this.checkGoalMet();
-    console.log("[alarm] Goal check", { goalMet });
     if (goalMet) {
       await this.sendGoalCongrats();
       // Don't reschedule - goal is met for today
@@ -376,10 +377,8 @@ export class DrinkyState extends DurableObject {
 
     // Check if user logged water recently (within last 5 minutes)
     const recentLog = await this.getRecentWaterLog(5 * 60 * 1000); // 5 minutes in ms
-    console.log("[alarm] Recent log check", { recentLog });
     if (recentLog) {
       // Skip this reminder, reschedule next one
-      console.log("[alarm] Recent log found, skipping reminder and rescheduling");
       try {
         await this.scheduleNextReminder();
         console.log("[alarm] Next reminder scheduled after recent log check");
@@ -393,7 +392,6 @@ export class DrinkyState extends DurableObject {
       return;
     }
 
-    console.log("[alarm] Sending reminder message and rescheduling");
     try {
       await this.sendReminderMessage();
       console.log("[alarm] Reminder message sent successfully");
@@ -416,8 +414,6 @@ export class DrinkyState extends DurableObject {
       // Re-throw to ensure we know about this critical failure
       throw error;
     }
-
-    console.log("[alarm] Alarm processing complete");
   }
 
   // Helper Methods
