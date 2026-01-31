@@ -6,6 +6,9 @@ import { userTable, waterLogTable } from "./db/schema";
 import { relations } from "./db/relations";
 import { and, desc, eq, gte, lt, sum } from "drizzle-orm";
 import { Bot } from "grammy";
+import { getLocalStartOfDay, getLocalNextDay, validateTimezone } from "./utils";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
+import { startOfDay, addHours, addDays, getHours } from "date-fns";
 
 export class DrinkyState extends DurableObject {
   storage: DurableObjectStorage;
@@ -21,7 +24,7 @@ export class DrinkyState extends DurableObject {
     // Otherwise you will need to run `this.migrate()` in any function
     // that accesses the Drizzle database `this.db`.
 
-    ctx.blockConcurrencyWhile(async () => {
+    void ctx.blockConcurrencyWhile(async () => {
       await migrate(this.db, migrations);
     });
   }
@@ -48,13 +51,16 @@ export class DrinkyState extends DurableObject {
       return null;
     }
 
+    const currentUser = await this.selectCurrentUser();
+    const timeZone = currentUser?.reminderTimezone || "UTC";
+
     return new Date(alarm).toLocaleString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "Asia/Kolkata",
+      timeZone,
     });
   }
 
@@ -80,15 +86,21 @@ export class DrinkyState extends DurableObject {
       throw new Error("User not found");
     }
 
-    const date = new Date(timestamp);
-    const startOfDay = new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-    );
-    const startOfNextDay = new Date(startOfDay);
-    startOfNextDay.setUTCDate(startOfNextDay.getUTCDate() + 1);
+    const timezone = currentUser.reminderTimezone || "UTC";
+    if (!validateTimezone(timezone)) {
+      console.warn("[getStats] Invalid timezone, falling back to UTC", { timezone });
+    }
 
-    const dayStart = startOfDay.toISOString();
-    const nextDayStart = startOfNextDay.toISOString();
+    const dayStart = getLocalStartOfDay(timestamp, timezone || "UTC");
+    const nextDayStart = getLocalNextDay(timestamp, timezone || "UTC");
+
+    console.log("[getStats] Calculating stats with timezone", {
+      timezone,
+      requestedTimestamp: new Date(timestamp).toISOString(),
+      dayStart,
+      nextDayStart,
+      userId: currentUser.id,
+    });
 
     const stats = this.db
       .select({
@@ -400,124 +412,66 @@ export class DrinkyState extends DurableObject {
 
   // Helper Methods
 
-  calculateNextReminderTime(intervalMinutes: number, _timezone: string): number | null {
+  calculateNextReminderTime(intervalMinutes: number, timezone: string): number | null {
     try {
       console.log("[calculateNextReminderTime] Starting calculation", {
         intervalMinutes,
-        timezone: _timezone,
+        timezone,
       });
 
-      const now = new Date();
-      console.log("[calculateNextReminderTime] Current time", {
-        now: now.toISOString(),
-        nowUTC: now.getTime(),
-      });
+      const now = Date.now();
+      const START_HOUR = 6; // 6 AM Local
 
-      // Quiet hours: 00:00 UTC to 05:00 UTC
-      const QUIET_HOUR_START = 0; // 12 AM UTC
-      const QUIET_HOUR_END = 5; // 5 AM UTC
+      // 1. Get Today's Start Time (6 AM Local Today)
+      const zonedNow = toZonedTime(now, timezone);
+      const zonedDayStart = startOfDay(zonedNow);
+      const zonedTodayStart = addHours(zonedDayStart, START_HOUR);
+      const todayStartUtc = fromZonedTime(zonedTodayStart, timezone).getTime();
 
-      const todayStart = new Date(now);
-      todayStart.setUTCHours(1, 30, 0, 0);
-      console.log("[calculateNextReminderTime] Today start time", {
-        todayStart: todayStart.toISOString(),
-        todayStartUTC: todayStart.getTime(),
-      });
-
-      // If start time is in quiet hours, adjust to end of quiet hours (05:00 UTC)
-      if (
-        todayStart.getUTCHours() >= QUIET_HOUR_START &&
-        todayStart.getUTCHours() < QUIET_HOUR_END
-      ) {
-        todayStart.setUTCHours(QUIET_HOUR_END, 0, 0);
-        console.log("[calculateNextReminderTime] Start time was in quiet hours, adjusted to", {
-          todayStart: todayStart.toISOString(),
-        });
-      }
-
-      // If start time hasn't occurred today yet, schedule for start time today
-      if (todayStart > now) {
+      // If todayStart is in the future, schedule for then
+      if (todayStartUtc > now) {
         console.log(
           "[calculateNextReminderTime] Start time hasn't occurred today, scheduling for today start",
+          { todayStart: new Date(todayStartUtc).toISOString() },
         );
-        return todayStart.getTime();
+        return todayStartUtc;
       }
 
-      // Calculate how many minutes have passed since start time today
-      const minutesSinceStart = Math.floor((now.getTime() - todayStart.getTime()) / (60 * 1000));
-      console.log("[calculateNextReminderTime] Minutes since start", {
-        minutesSinceStart,
-      });
+      // 2. Calculate intervals
+      const msSinceStart = now - todayStartUtc;
+      const intervalMs = intervalMinutes * 60 * 1000;
 
-      // Calculate which interval we're in (0-indexed)
-      const currentInterval = Math.floor(minutesSinceStart / intervalMinutes);
-      console.log("[calculateNextReminderTime] Current interval", {
-        currentInterval,
-      });
+      // Calculate which interval we're in
+      const currentInterval = Math.floor(msSinceStart / intervalMs);
 
       // Calculate next interval time
-      const nextIntervalMinutes = (currentInterval + 1) * intervalMinutes;
-      const nextReminder = new Date(todayStart);
-      nextReminder.setUTCMinutes(nextReminder.getUTCMinutes() + nextIntervalMinutes);
+      const nextReminderUtc = todayStartUtc + (currentInterval + 1) * intervalMs;
+
       console.log("[calculateNextReminderTime] Next reminder calculated", {
-        nextReminder: nextReminder.toISOString(),
-        nextReminderUTC: nextReminder.getTime(),
-        nextIntervalMinutes,
+        nextReminder: new Date(nextReminderUtc).toISOString(),
+        intervalMs,
       });
 
-      // Check if next reminder falls in quiet hours (00:00-05:00 UTC)
-      const reminderHour = nextReminder.getUTCHours();
-      if (reminderHour >= QUIET_HOUR_START && reminderHour < QUIET_HOUR_END) {
-        console.log(
-          "[calculateNextReminderTime] Next reminder is in quiet hours, skipping to 05:00 UTC",
-          {
-            reminderHour,
-            quietHours: `${QUIET_HOUR_START}:00 - ${QUIET_HOUR_END}:00 UTC`,
-          },
-        );
-        // If it's still today, set to 05:00 UTC today
-        if (nextReminder.getUTCDate() === todayStart.getUTCDate()) {
-          nextReminder.setUTCHours(QUIET_HOUR_END, 0, 0);
-          console.log("[calculateNextReminderTime] Adjusted to 05:00 UTC today", {
-            nextReminder: nextReminder.toISOString(),
-          });
-        } else {
-          // If it's tomorrow, set to 05:00 UTC tomorrow
-          const tomorrowQuietEnd = new Date(todayStart);
-          tomorrowQuietEnd.setUTCDate(tomorrowQuietEnd.getUTCDate() + 1);
-          tomorrowQuietEnd.setUTCHours(QUIET_HOUR_END, 0, 0);
-          console.log("[calculateNextReminderTime] Adjusted to 05:00 UTC tomorrow", {
-            tomorrowQuietEnd: tomorrowQuietEnd.toISOString(),
-          });
-          return tomorrowQuietEnd.getTime();
-        }
-      }
+      // 3. Check if next reminder falls in quiet hours (00:00 - 06:00)
+      const zonedNextReminder = toZonedTime(nextReminderUtc, timezone);
+      const hour = getHours(zonedNextReminder);
 
-      // If next reminder would be tomorrow (past midnight), schedule for start time tomorrow
-      if (nextReminder.getUTCDate() !== todayStart.getUTCDate()) {
-        const tomorrowStart = new Date(todayStart);
-        tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
-        // Ensure tomorrow's start time is not in quiet hours
-        if (
-          tomorrowStart.getUTCHours() >= QUIET_HOUR_START &&
-          tomorrowStart.getUTCHours() < QUIET_HOUR_END
-        ) {
-          tomorrowStart.setUTCHours(QUIET_HOUR_END, 0, 0);
-        }
+      if (hour < START_HOUR) {
         console.log(
-          "[calculateNextReminderTime] Next reminder is tomorrow, scheduling for tomorrow start",
-          {
-            tomorrowStart: tomorrowStart.toISOString(),
-          },
+          "[calculateNextReminderTime] Next reminder is in quiet hours (00:00-06:00), scheduling for tomorrow start",
+          { hour },
         );
-        return tomorrowStart.getTime();
+        // Schedule for Tomorrow 6 AM
+        const zonedTomorrowStart = addDays(zonedTodayStart, 1);
+        const tomorrowStartUtc = fromZonedTime(zonedTomorrowStart, timezone).getTime();
+        return tomorrowStartUtc;
       }
 
       console.log("[calculateNextReminderTime] Successfully calculated next reminder time", {
-        result: nextReminder.getTime(),
-        resultISO: nextReminder.toISOString(),
+        result: nextReminderUtc,
+        resultISO: new Date(nextReminderUtc).toISOString(),
       });
-      return nextReminder.getTime();
+      return nextReminderUtc;
     } catch (error) {
       console.error("[calculateNextReminderTime] Error calculating next reminder time:", error);
       return null;

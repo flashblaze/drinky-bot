@@ -112,6 +112,8 @@ const stub = ctx.env.DRINKY_STATE.getByName(ctx.message.from.id.toString());
 const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
 ```
 
+4. Always use ES6 features and best practices.
+
 ### Database Operations
 
 All database operations are methods on the `DrinkyState` Durable Object class:
