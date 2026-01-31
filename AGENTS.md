@@ -28,7 +28,7 @@ Drinky Bot is a Telegram bot that helps users track their daily water intake. It
    - Reminder configurations
    - Database operations (SQLite via Durable Object storage)
 
-2. **Command/Callback Pattern**: 
+2. **Command/Callback Pattern**:
    - **Commands**: Slash commands (e.g., `/start`, `/log`, `/stats`)
    - **Callbacks**: Inline keyboard button interactions (e.g., `log_water`, `stats`)
 
@@ -115,6 +115,7 @@ const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString()
 ### Database Operations
 
 All database operations are methods on the `DrinkyState` Durable Object class:
+
 - `insert(user)` - Create a new user
 - `selectCurrentUser()` - Get current user
 - `insertWaterLog(quantity)` - Log water intake
@@ -153,6 +154,7 @@ await ctx.reply("Message", { reply_markup: keyboard });
 - **waterLogTable**: Stores individual water intake logs with timestamps
 
 Both tables use:
+
 - Custom nanoid for IDs (24 chars, alphanumeric + underscore)
 - Automatic `createdAt` and `updatedAt` timestamps
 - Indexes on commonly queried fields
@@ -182,6 +184,7 @@ Both tables use:
 ### Adding Reminder Logic
 
 Reminders use Cloudflare Durable Object alarms:
+
 - `setAlarm(timestamp)` - Schedule an alarm
 - `getNextAlarm()` - Get next scheduled alarm time
 - Alarms trigger the `alarm()` method in `DrinkyState`

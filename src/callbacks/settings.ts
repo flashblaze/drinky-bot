@@ -139,9 +139,7 @@ Use /settings to configure\\.`;
     pattern: "reminder_timezone_auto",
     handler: async (ctx) => {
       await ctx.answerCallbackQuery();
-      const locationKeyboard = new Keyboard()
-        .requestLocation("📍 Share Location")
-        .resized();
+      const locationKeyboard = new Keyboard().requestLocation("📍 Share Location").resized();
 
       await ctx.reply("Please share your location to automatically detect your timezone.", {
         reply_markup: locationKeyboard,
@@ -161,7 +159,7 @@ Use /settings to configure\\.`;
       const settings = await stub.getReminderSettings();
 
       const keyboard = new InlineKeyboard();
-      
+
       // Add Auto-detect button
       keyboard.text("📍 Auto-detect from Location", "reminder_timezone_auto").row();
 
