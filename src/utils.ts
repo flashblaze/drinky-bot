@@ -25,11 +25,18 @@ export const getLocalNextDay = (timestamp: number, timezone: string): string => 
     const utcNextDay = fromZonedTime(zonedNextDay, timezone);
     return utcNextDay.toISOString();
   } catch (error) {
-    console.error("[getLocalNextDay] Error calculating local next day", {
-      error,
-      timestamp,
-      timezone,
-    });
+    console.error(
+      "[getLocalNextDay] Error calculating local next day",
+      JSON.stringify(
+        {
+          error,
+          timestamp,
+          timezone,
+        },
+        null,
+        2,
+      ),
+    );
     // Fallback to UTC next day
     return addDays(startOfDay(timestamp), 1).toISOString();
   }

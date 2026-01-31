@@ -91,7 +91,7 @@ export class DrinkyState extends DurableObject {
 
     const timezone = currentUser.reminderTimezone || "UTC";
     if (!validateTimezone(timezone)) {
-      console.warn("[getStats] Invalid timezone, falling back to UTC", { timezone });
+      console.log("[getStats] Invalid timezone, falling back to UTC", { timezone });
     }
 
     const dayStart = getLocalStartOfDay(timestamp, timezone || "UTC");
@@ -245,10 +245,14 @@ export class DrinkyState extends DurableObject {
     if (!nextReminderTime) {
       console.error(
         "[scheduleNextReminder] Failed to calculate next reminder time - returning null",
-        {
-          userId: currentUser.id,
-          intervalMinutes: currentUser.reminderIntervalMinutes,
-        },
+        JSON.stringify(
+          {
+            userId: currentUser.id,
+            intervalMinutes: currentUser.reminderIntervalMinutes,
+          },
+          null,
+          2,
+        ),
       );
       return;
     }
@@ -258,33 +262,42 @@ export class DrinkyState extends DurableObject {
     let alarmTimeToSet = nextReminderTime;
 
     if (nextReminderTime <= now) {
-      console.error("[scheduleNextReminder] Calculated alarm time is in the past, recalculating", {
-        userId: currentUser.id,
-        nextReminderTime,
-        nextReminderTimeISO: new Date(nextReminderTime).toISOString(),
-        now,
-        nowISO: new Date(now).toISOString(),
-        diffMs: nextReminderTime - now,
-      });
+      console.log(
+        "[scheduleNextReminder] Calculated alarm time is in the past, recalculating",
+        JSON.stringify(
+          {
+            userId: currentUser.id,
+            nextReminderTime,
+            nextReminderTimeISO: new Date(nextReminderTime).toISOString(),
+            now,
+            nowISO: new Date(now).toISOString(),
+            diffMs: nextReminderTime - now,
+          },
+          null,
+          2,
+        ),
+      );
       // Try to calculate again - this shouldn't happen if logic is correct, but handle edge case
       const recalculated = calculateNextReminderTime(
         currentUser.reminderIntervalMinutes,
         currentUser.reminderTimezone,
       );
       if (!recalculated || recalculated <= now) {
-        console.error("[scheduleNextReminder] Recalculation also failed or is in past, aborting", {
-          userId: currentUser.id,
-          recalculated,
-        });
+        console.error(
+          "[scheduleNextReminder] Recalculation also failed or is in past, aborting",
+          JSON.stringify(
+            {
+              userId: currentUser.id,
+              recalculated,
+            },
+            null,
+            2,
+          ),
+        );
         return;
       }
       // Use recalculated time
       alarmTimeToSet = recalculated;
-      console.warn("[scheduleNextReminder] Using recalculated time", {
-        userId: currentUser.id,
-        recalculated,
-        recalculatedISO: new Date(recalculated).toISOString(),
-      });
     }
 
     try {
@@ -338,11 +351,18 @@ export class DrinkyState extends DurableObject {
         );
       }
     } catch (error) {
-      console.error("[scheduleNextReminder] Error setting alarm", {
-        userId: currentUser.id,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+      console.error(
+        "[scheduleNextReminder] Error setting alarm",
+        JSON.stringify(
+          {
+            userId: currentUser.id,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          },
+          null,
+          2,
+        ),
+      );
       throw error; // Re-throw to ensure we know about failures
     }
   }
@@ -358,7 +378,6 @@ export class DrinkyState extends DurableObject {
   async alarm() {
     const currentUser = await this.selectCurrentUser();
     if (!currentUser) {
-      console.error("[alarm] No current user found");
       return;
     }
 
@@ -370,8 +389,6 @@ export class DrinkyState extends DurableObject {
     const goalMet = await this.checkGoalMet();
     if (goalMet) {
       await this.sendGoalCongrats();
-      // Don't reschedule - goal is met for today
-      console.log("[alarm] Goal met, not rescheduling");
       return;
     }
 
@@ -383,10 +400,17 @@ export class DrinkyState extends DurableObject {
         await this.scheduleNextReminder();
         console.log("[alarm] Next reminder scheduled after recent log check");
       } catch (error) {
-        console.error("[alarm] CRITICAL: Failed to schedule next reminder after recent log check", {
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        });
+        console.error(
+          "[alarm] CRITICAL: Failed to schedule next reminder after recent log check",
+          JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+            },
+            null,
+            2,
+          ),
+        );
         throw error;
       }
       return;
@@ -396,10 +420,17 @@ export class DrinkyState extends DurableObject {
       await this.sendReminderMessage();
       console.log("[alarm] Reminder message sent successfully");
     } catch (error) {
-      console.error("[alarm] Error sending reminder message, but continuing to reschedule", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+      console.error(
+        "[alarm] Error sending reminder message, but continuing to reschedule",
+        JSON.stringify(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          },
+          null,
+          2,
+        ),
+      );
       // Continue to reschedule even if message sending fails
     }
 
@@ -407,10 +438,17 @@ export class DrinkyState extends DurableObject {
       await this.scheduleNextReminder();
       console.log("[alarm] Next reminder scheduled successfully");
     } catch (error) {
-      console.error("[alarm] CRITICAL: Failed to schedule next reminder", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+      console.error(
+        "[alarm] CRITICAL: Failed to schedule next reminder",
+        JSON.stringify(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          },
+          null,
+          2,
+        ),
+      );
       // Re-throw to ensure we know about this critical failure
       throw error;
     }
