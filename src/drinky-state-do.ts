@@ -97,13 +97,20 @@ export class DrinkyState extends DurableObject {
     const dayStart = getLocalStartOfDay(timestamp, timezone || "UTC");
     const nextDayStart = getLocalNextDay(timestamp, timezone || "UTC");
 
-    console.log("[getStats] Calculating stats with timezone", {
-      timezone,
-      requestedTimestamp: new Date(timestamp).toISOString(),
-      dayStart,
-      nextDayStart,
-      userId: currentUser.id,
-    });
+    console.log(
+      "[getStats] Calculating stats with timezone",
+      JSON.stringify(
+        {
+          timezone,
+          requestedTimestamp: new Date(timestamp).toISOString(),
+          dayStart,
+          nextDayStart,
+          userId: currentUser.id,
+        },
+        null,
+        2,
+      ),
+    );
 
     const stats = this.db
       .select({
@@ -414,8 +421,6 @@ export class DrinkyState extends DurableObject {
   }
 
   // Helper Methods
-
-
 
   async checkGoalMet(): Promise<boolean> {
     const currentUser = await this.selectCurrentUser();
