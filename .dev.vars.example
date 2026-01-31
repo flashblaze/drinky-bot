@@ -1,2 +1,3 @@
 BOT_TOKEN=
-MODE=development
+# development when running locally. You can skip when deploying to Cloudflare.
+MODE=
