@@ -11,6 +11,7 @@ import {
   getLocalNextDay,
   validateTimezone,
   calculateNextReminderTime,
+  calculateNextDayStart,
 } from "./utils";
 
 export class DrinkyState extends DurableObject {
@@ -363,6 +364,18 @@ export class DrinkyState extends DurableObject {
     const goalMet = await this.checkGoalMet();
     if (goalMet) {
       await this.sendGoalCongrats();
+
+      const nextDayStart = calculateNextDayStart(currentUser.reminderTimezone || "UTC");
+      console.log(
+        "[alarm] Goal met, scheduling next alarm for tomorrow morning",
+        JSON.stringify({
+          userId: currentUser.id,
+          nextDayStart,
+          nextDayStartISO: new Date(nextDayStart).toISOString(),
+        }),
+      );
+      await this.storage.setAlarm(nextDayStart);
+
       return;
     }
 

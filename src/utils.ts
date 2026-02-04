@@ -98,6 +98,15 @@ export const calculateNextReminderTime = (
   }
 };
 
+export const calculateNextDayStart = (timezone: string, now = Date.now()): number => {
+  const START_HOUR = 6;
+  const zonedNow = toZonedTime(now, timezone);
+  const zonedDayStart = startOfDay(zonedNow);
+  const zonedTodayStart = addHours(zonedDayStart, START_HOUR);
+  const zonedNextDayStart = addDays(zonedTodayStart, 1);
+  return fromZonedTime(zonedNextDayStart, timezone).getTime();
+};
+
 /**
  * Escapes special characters for Telegram MarkdownV2 format.
  * All special characters must be escaped: _ * [ ] ( ) ~ ` > # + - = | { } . !
