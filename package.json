@@ -10,7 +10,8 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "db:generate": "drizzle-kit generate",
-    "test": "vitest"
+    "test": "vitest run",
+    "prepare": "husky"
   },
   "dependencies": {
     "date-fns": "^4.1.0",
@@ -26,6 +27,7 @@
     "@types/node": "^25.2.0",
     "@types/tz-lookup": "^6.1.2",
     "drizzle-kit": "1.0.0-beta.12-a5629fb",
+    "husky": "^9.1.7",
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
     "oxlint-tsgolint": "^0.11.4",
