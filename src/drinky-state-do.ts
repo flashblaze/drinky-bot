@@ -5,7 +5,7 @@ import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 import { userTable, waterLogTable } from "./db/schema";
 import { relations } from "./db/relations";
 import { and, desc, eq, gte, lt, sum } from "drizzle-orm";
-import { Bot } from "grammy";
+import { Bot, GrammyError } from "grammy";
 import {
   getLocalStartOfDay,
   getLocalNextDay,
@@ -499,6 +499,12 @@ export class DrinkyState extends DurableObject {
         reply_markup: keyboard,
       });
     } catch (error) {
+      if (error instanceof GrammyError && error.error_code === 403) {
+        console.log(
+          `[sendReminderMessage] Bot blocked by user ${currentUser.telegramId}, disabling reminders`,
+        );
+        await this.updateReminderSettings({ reminderEnabled: false });
+      }
       console.error("Error sending reminder message:", error);
     }
   }
@@ -518,6 +524,12 @@ export class DrinkyState extends DurableObject {
         parse_mode: "MarkdownV2",
       });
     } catch (error) {
+      if (error instanceof GrammyError && error.error_code === 403) {
+        console.log(
+          `[sendGoalCongrats] Bot blocked by user ${currentUser.telegramId}, disabling reminders`,
+        );
+        await this.updateReminderSettings({ reminderEnabled: false });
+      }
       console.error("Error sending goal congrats message:", error);
     }
   }
