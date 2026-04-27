@@ -121,3 +121,15 @@ export const escapeMarkdown = (text: string): string => {
     .replace(/\\/g, "\\\\") // Escape backslashes first
     .replace(/[_*[\]()~`>#+\-=|{}.!]/g, "\\$&"); // Then escape other special chars
 };
+
+export const formatTodayStatsMessage = (totalAmount: number, goal: number): string => {
+  return `You've drank *${totalAmount} ml* today\\.\nYour goal is to drink *${goal} ml* every day\\.`;
+};
+
+export const formatLoggedWaterMessage = (
+  amount: number,
+  totalAmount: number,
+  goal: number,
+): string => {
+  return `Logged ${amount} ml\n${formatTodayStatsMessage(totalAmount, goal)}`;
+};

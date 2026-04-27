@@ -1,4 +1,5 @@
 import type { Command } from "../bot/types";
+import { formatLoggedWaterMessage } from "../utils";
 
 export const logCommand: Command = {
   name: "log",
@@ -30,6 +31,19 @@ export const logCommand: Command = {
     const stub = ctx.env.DRINKY_STATE.getByName(ctx.message.from.id.toString());
     await stub.insertWaterLog(amount);
 
-    await ctx.reply(`Logged ${amount} ml`);
+    const stats = await stub.getStats(Date.now());
+    const currentUser = await stub.selectCurrentUser();
+
+    if (!currentUser) {
+      await ctx.reply(`Logged ${amount} ml`);
+      return;
+    }
+
+    await ctx.reply(
+      formatLoggedWaterMessage(amount, Number(stats?.totalAmount || 0), currentUser.goal),
+      {
+        parse_mode: "MarkdownV2",
+      },
+    );
   },
 };

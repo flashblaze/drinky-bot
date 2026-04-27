@@ -1,4 +1,5 @@
 import type { Callback } from "../bot/types";
+import { formatTodayStatsMessage } from "../utils";
 
 export const statsCallback: Callback = {
   pattern: "stats",
@@ -25,12 +26,9 @@ export const statsCallback: Callback = {
         await ctx.reply("User not found");
         return;
       }
-      await ctx.reply(
-        `You've drank *${stats.totalAmount || 0} ml* today\\.\nYour goal is to drink *${currentUser.goal} ml* every day\\.`,
-        {
-          parse_mode: "MarkdownV2",
-        },
-      );
+      await ctx.reply(formatTodayStatsMessage(Number(stats.totalAmount || 0), currentUser.goal), {
+        parse_mode: "MarkdownV2",
+      });
     }
   },
 };
