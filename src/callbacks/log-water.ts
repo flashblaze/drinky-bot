@@ -7,6 +7,7 @@ const WATER_AMOUNTS = [
   { label: "200 ml", value: 200, callback: "log_water_200" },
   { label: "250 ml", value: 250, callback: "log_water_250" },
   { label: "500 ml", value: 500, callback: "log_water_500" },
+  { label: "650 ml", value: 650, callback: "log_water_650" },
 ] as const;
 
 export const logWaterCallbacks: Callback[] = [
@@ -19,7 +20,9 @@ export const logWaterCallbacks: Callback[] = [
         .text("200 ml", "log_water_200")
         .row()
         .text("250 ml", "log_water_250")
-        .text("500 ml", "log_water_500");
+        .text("500 ml", "log_water_500")
+        .row()
+        .text("650 ml", "log_water_650");
 
       await ctx.reply("Choose amount", {
         reply_markup: keyboard,

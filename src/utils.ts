@@ -122,8 +122,10 @@ export const escapeMarkdown = (text: string): string => {
     .replace(/[_*[\]()~`>#+\-=|{}.!]/g, "\\$&"); // Then escape other special chars
 };
 
+const formatMarkdownNumber = (value: number): string => escapeMarkdown(String(value));
+
 export const formatTodayStatsMessage = (totalAmount: number, goal: number): string => {
-  return `You've drank *${totalAmount} ml* today\\.\nYour goal is to drink *${goal} ml* every day\\.`;
+  return `You've drank *${formatMarkdownNumber(totalAmount)} ml* today\\.\nYour goal is to drink *${formatMarkdownNumber(goal)} ml* every day\\.`;
 };
 
 export const formatLoggedWaterMessage = (
@@ -131,5 +133,9 @@ export const formatLoggedWaterMessage = (
   totalAmount: number,
   goal: number,
 ): string => {
-  return `Logged ${amount} ml\n${formatTodayStatsMessage(totalAmount, goal)}`;
+  return `Logged ${formatMarkdownNumber(amount)} ml\n${formatTodayStatsMessage(totalAmount, goal)}`;
+};
+
+export const formatReminderMessage = (totalAmount: number, goal: number): string => {
+  return `Reminder\\! You've had *${formatMarkdownNumber(totalAmount)} ml* today, goal is *${formatMarkdownNumber(goal)} ml*\\.`;
 };
