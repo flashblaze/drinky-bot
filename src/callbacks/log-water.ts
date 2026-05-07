@@ -1,11 +1,13 @@
 import { InlineKeyboard } from "grammy";
 import type { Callback } from "../bot/types";
+import { formatLoggedWaterMessage } from "../utils";
 
 const WATER_AMOUNTS = [
   { label: "100 ml", value: 100, callback: "log_water_100" },
   { label: "200 ml", value: 200, callback: "log_water_200" },
   { label: "250 ml", value: 250, callback: "log_water_250" },
   { label: "500 ml", value: 500, callback: "log_water_500" },
+  { label: "650 ml", value: 650, callback: "log_water_650" },
 ] as const;
 
 export const logWaterCallbacks: Callback[] = [
@@ -18,7 +20,9 @@ export const logWaterCallbacks: Callback[] = [
         .text("200 ml", "log_water_200")
         .row()
         .text("250 ml", "log_water_250")
-        .text("500 ml", "log_water_500");
+        .text("500 ml", "log_water_500")
+        .row()
+        .text("650 ml", "log_water_650");
 
       await ctx.reply("Choose amount", {
         reply_markup: keyboard,
@@ -36,7 +40,21 @@ export const logWaterCallbacks: Callback[] = [
         await ctx.answerCallbackQuery();
         const stub = ctx.env.DRINKY_STATE.getByName(ctx.callbackQuery.from.id.toString());
         await stub.insertWaterLog(amount.value);
-        await ctx.reply(`Logged ${amount.label}`);
+
+        const stats = await stub.getStats(Date.now());
+        const currentUser = await stub.selectCurrentUser();
+
+        if (!currentUser) {
+          await ctx.reply(`Logged ${amount.label}`);
+          return;
+        }
+
+        await ctx.reply(
+          formatLoggedWaterMessage(amount.value, Number(stats?.totalAmount || 0), currentUser.goal),
+          {
+            parse_mode: "MarkdownV2",
+          },
+        );
       },
     }),
   ),

@@ -12,6 +12,7 @@ import {
   validateTimezone,
   calculateNextReminderTime,
   calculateNextDayStart,
+  formatReminderMessage,
 } from "./utils";
 
 export class DrinkyState extends DurableObject {
@@ -482,7 +483,7 @@ export class DrinkyState extends DurableObject {
     const stats = await this.getStats(Date.now());
     const totalAmount = stats?.totalAmount ? Number(stats.totalAmount) : 0;
 
-    const message = `Reminder\\! You've had *${totalAmount} ml* today, goal is *${currentUser.goal} ml*\\.`;
+    const message = formatReminderMessage(totalAmount, currentUser.goal);
 
     const bot = new Bot(this.env.BOT_TOKEN);
     const { InlineKeyboard } = await import("grammy");
@@ -491,7 +492,9 @@ export class DrinkyState extends DurableObject {
       .text("200 ml", "log_water_200")
       .row()
       .text("250 ml", "log_water_250")
-      .text("500 ml", "log_water_500");
+      .text("500 ml", "log_water_500")
+      .row()
+      .text("650 ml", "log_water_650");
 
     try {
       await bot.api.sendMessage(currentUser.telegramId, message, {
